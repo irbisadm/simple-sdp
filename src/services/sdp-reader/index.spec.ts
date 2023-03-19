@@ -1,4 +1,4 @@
-import {sdpReader} from "./sdpReader";
+import {sdpReader} from "./index";
 import {simpleTest} from "../../../assets/testSdp";
 
 describe('sdpReader tests',()=>{

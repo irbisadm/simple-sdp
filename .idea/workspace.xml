@@ -4,40 +4,11 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="9e3c6215-aa49-49be-a26b-710864bb9dcf" name="Changes" comment="feat(sdp-parser): parsing of the basic (non-section specific) attributes">
-      <change afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/modules.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/LICENSE" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/assets/testSdp.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/jest.config.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/package.json" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/readme.md" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/rollup.config.mjs" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/simple-sdp.iml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/index.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/inerfaces/Sdp.ts" afterDir="false" />
+    <list default="true" id="9e3c6215-aa49-49be-a26b-710864bb9dcf" name="Changes" comment="chore: project configuration">
       <change afterPath="$PROJECT_DIR$/src/services/sdp-pipe-validator.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/services/sdp-reader/index.spec.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/services/sdp-reader/parsers/e-line.parser.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/services/sdp-reader/parsers/i-line.parser.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/services/sdp-reader/parsers/k-line.parser.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/services/sdp-reader/parsers/line-parts.parser.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/services/sdp-reader/parsers/line-time.parser.spec.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/services/sdp-reader/parsers/line-time.parser.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/services/sdp-reader/parsers/o-line.parser.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/services/sdp-reader/parsers/p-line.parser.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/services/sdp-reader/parsers/r-line.parser.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/services/sdp-reader/parsers/s-line.parser.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/services/sdp-reader/parsers/string-to-int.parser.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/services/sdp-reader/parsers/t-line.parser.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/services/sdp-reader/parsers/u-line.parser.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/services/sdp-reader/parsers/v-line.parser.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/services/sdp-reader/sdpReader.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/tsconfig.json" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/yarn.lock" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/index.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/index.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/services/sdp-reader/index.spec.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/services/sdp-reader/index.spec.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/services/sdp-reader/sdpReader.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/services/sdp-reader/index.ts" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -68,8 +39,10 @@
   </component>
   <component name="PropertiesComponent"><![CDATA[{
   "keyToString": {
+    "ASKED_SHARE_PROJECT_CONFIGURATION_FILES": "true",
     "RunOnceActivity.OpenProjectViewOnStart": "true",
     "RunOnceActivity.ShowReadmeOnStart": "true",
+    "SHARE_PROJECT_CONFIGURATION_FILES": "true",
     "WebServerToolWindowFactoryState": "false",
     "javascript.nodejs.core.library.configured.version": "18.13.0",
     "javascript.nodejs.core.library.typings.version": "18.13.0",
@@ -182,8 +155,23 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1679120964314</updated>
-      <workItem from="1679120965334" duration="16236000" />
+      <workItem from="1679120965334" duration="16856000" />
     </task>
+    <task id="LOCAL-00001" summary="feat(sdp-parser): parsing of the basic (non-section specific) attributes">
+      <created>1679212768322</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1679212768322</updated>
+    </task>
+    <task id="LOCAL-00002" summary="chore: project configuration">
+      <created>1679212802160</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1679212802160</updated>
+    </task>
+    <option name="localTasksCounter" value="3" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -191,6 +179,7 @@
   </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="feat(sdp-parser): parsing of the basic (non-section specific) attributes" />
-    <option name="LAST_COMMIT_MESSAGE" value="feat(sdp-parser): parsing of the basic (non-section specific) attributes" />
+    <MESSAGE value="chore: project configuration" />
+    <option name="LAST_COMMIT_MESSAGE" value="chore: project configuration" />
   </component>
 </project>
