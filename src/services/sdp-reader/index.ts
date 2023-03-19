@@ -10,6 +10,8 @@ import {eLineParser} from "./parsers/e-line.parser";
 import {pLineParser} from "./parsers/p-line.parser";
 import {kLineParser} from "./parsers/k-line.parser";
 import {mLineParser} from "./parsers/m-line.parser";
+import {bLineParser} from "./parsers/b-line.parser";
+import {cLineParser} from "./parsers/c-line.parser";
 
 const parse = (sdp: string): Sdp => {
   const sdpLines = sdp.split("\r\n");
@@ -74,11 +76,21 @@ const parse = (sdp: string): Sdp => {
         }
         parsedSdp.media.push(mediaSection);
         break;
-      case 'a':
+      case 'b':
+        if(!activeSection){
+          parsedSdp.bandwidthInformation = bLineParser(line);
+        } else {
+          activeSection.bandwidthInformation = bLineParser(line);
+        }
         break;
       case 'c':
+        if(!activeSection){
+          parsedSdp.connectionInformation = cLineParser(line);
+        } else {
+          activeSection.connectionInformation = cLineParser(line);
+        }
         break;
-      case 'b':
+      case 'a':
         break;
       default:
         throw Error(`Unknown line type "${line[0]}"`);

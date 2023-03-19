@@ -4,11 +4,11 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="9e3c6215-aa49-49be-a26b-710864bb9dcf" name="Changes" comment="chore: fix sdpReader service filenames">
+    <list default="true" id="9e3c6215-aa49-49be-a26b-710864bb9dcf" name="Changes" comment="feat(sdp-parser): basic media parser">
       <change afterPath="$PROJECT_DIR$/src/services/sdp-pipe-validator.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/services/sdp-reader/parsers/m-line.parser.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/services/sdp-reader/parsers/b-line.parser.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/services/sdp-reader/parsers/c-line.parser.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/assets/testSdp.ts" beforeDir="false" afterPath="$PROJECT_DIR$/assets/testSdp.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/inerfaces/Sdp.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/inerfaces/Sdp.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/services/sdp-reader/index.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/services/sdp-reader/index.ts" afterDir="false" />
     </list>
@@ -157,7 +157,7 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1679120964314</updated>
-      <workItem from="1679120965334" duration="20049000" />
+      <workItem from="1679120965334" duration="22759000" />
     </task>
     <task id="LOCAL-00001" summary="feat(sdp-parser): parsing of the basic (non-section specific) attributes">
       <created>1679212768322</created>
@@ -180,7 +180,14 @@
       <option name="project" value="LOCAL" />
       <updated>1679213433202</updated>
     </task>
-    <option name="localTasksCounter" value="4" />
+    <task id="LOCAL-00004" summary="feat(sdp-parser): basic media parser">
+      <created>1679216931476</created>
+      <option name="number" value="00004" />
+      <option name="presentableId" value="LOCAL-00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1679216931476</updated>
+    </task>
+    <option name="localTasksCounter" value="5" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -190,6 +197,7 @@
     <MESSAGE value="feat(sdp-parser): parsing of the basic (non-section specific) attributes" />
     <MESSAGE value="chore: project configuration" />
     <MESSAGE value="chore: fix sdpReader service filenames" />
-    <option name="LAST_COMMIT_MESSAGE" value="chore: fix sdpReader service filenames" />
+    <MESSAGE value="feat(sdp-parser): basic media parser" />
+    <option name="LAST_COMMIT_MESSAGE" value="feat(sdp-parser): basic media parser" />
   </component>
 </project>
