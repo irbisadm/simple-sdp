@@ -50,6 +50,7 @@ interface Sdp {
    * representation of the end of the last session three months later.
    */
   repeat?: SdpRepeatTimes[]
+  media?: SdpMediaSection[]
 }
 
 
@@ -170,13 +171,32 @@ interface SdpEncryptionKey {
   encryptionKey?: string;
 }
 
-interface SdpMediaSection {
-
+interface SdpBaseMediaSection {
+  ports:number[],
+  proto: string,
 }
+
+interface SdpAVMediaSection extends SdpBaseMediaSection{
+  type: 'audio'|'video',
+  fmtp?: number[]
+}
+
+interface SdpAppMediaSection extends SdpBaseMediaSection {
+  type: 'application',
+  description?:string
+}
+
+interface SdpOtherMediaSection extends SdpBaseMediaSection{
+  type: 'text'|'message'| string,
+  fmtp?: string[]
+}
+
+type SdpMediaSection = SdpAVMediaSection | SdpAppMediaSection | SdpOtherMediaSection;
+
 
 interface SdpPair {
   offer: Sdp,
   answer: Sdp
 }
 
-export {Sdp, SdpMediaSection, SdpPair, SdpOrigin, SdpTiming, SdpRepeatTimes, SdpEncryptionKey}
+export {Sdp, SdpMediaSection, SdpPair, SdpOrigin, SdpTiming, SdpRepeatTimes, SdpEncryptionKey, SdpAVMediaSection, SdpAppMediaSection, SdpOtherMediaSection}

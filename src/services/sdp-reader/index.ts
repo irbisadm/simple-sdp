@@ -1,4 +1,4 @@
-import {Sdp} from "../../inerfaces/Sdp";
+import {Sdp, SdpMediaSection} from "../../inerfaces/Sdp";
 import {vLineParser} from "./parsers/v-line.parser";
 import {oLineParser} from "./parsers/o-line.parser";
 import {sLineParser} from "./parsers/s-line.parser";
@@ -9,15 +9,17 @@ import {uLineParser} from "./parsers/u-line.parser";
 import {eLineParser} from "./parsers/e-line.parser";
 import {pLineParser} from "./parsers/p-line.parser";
 import {kLineParser} from "./parsers/k-line.parser";
+import {mLineParser} from "./parsers/m-line.parser";
 
 const parse = (sdp: string): Sdp => {
   const sdpLines = sdp.split("\r\n");
   console.log(sdpLines);
   const parsedSdp:Sdp = {};
+  let activeSection:SdpMediaSection|null = null;
   sdpLines.forEach((line, idx)=>{
     if(line.length === 0){
-      if(idx !== line.length-1){
-        throw new Error(`Empty line at "${idx}"`);
+      if(idx !== sdpLines.length-1){
+        throw new Error(`Empty line at "${idx}" after ${sdpLines[idx-1]}`);
       }
       return;
     }
@@ -64,9 +66,15 @@ const parse = (sdp: string): Sdp => {
         }
         parsedSdp.encryptionKeys.push(kLineParser(line));
         break;
-      case 'a':
-        break;
       case 'm':
+        const mediaSection = mLineParser(line);
+        activeSection = mediaSection;
+        if(!parsedSdp.media){
+          parsedSdp.media = [];
+        }
+        parsedSdp.media.push(mediaSection);
+        break;
+      case 'a':
         break;
       case 'c':
         break;
@@ -76,7 +84,7 @@ const parse = (sdp: string): Sdp => {
         throw Error(`Unknown line type "${line[0]}"`);
     }
   });
-  console.log(parsedSdp);
+  console.log(JSON.stringify(parsedSdp, null, 2));
   return parsedSdp;
 }
 
