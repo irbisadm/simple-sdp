@@ -16,7 +16,6 @@ import {aLineParser} from "./parsers/a-line.parser";
 
 const parse = (sdp: string): Sdp => {
   const sdpLines = sdp.split("\r\n");
-  console.log(sdpLines);
   const parsedSdp:Sdp = {};
   let activeSection:SdpMediaSection|null = null;
   sdpLines.forEach((line, idx)=>{
@@ -102,7 +101,6 @@ const parse = (sdp: string): Sdp => {
         throw Error(`Unknown line type "${line[0]}"`);
     }
   });
-  console.log(JSON.stringify(parsedSdp, null, 2));
   return parsedSdp;
 }
 

@@ -4,10 +4,12 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="9e3c6215-aa49-49be-a26b-710864bb9dcf" name="Changes" comment="feat(sdp-parser): basic attributes parser">
-      <change afterPath="$PROJECT_DIR$/src/services/sdp-pipe-validator.ts" afterDir="false" />
+    <list default="true" id="9e3c6215-aa49-49be-a26b-710864bb9dcf" name="Changes" comment="chore: first readme block">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/package.json" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/readme.md" beforeDir="false" afterPath="$PROJECT_DIR$/readme.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/services/sdp-reader/index.spec.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/services/sdp-reader/index.spec.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/services/sdp-reader/index.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/services/sdp-reader/index.ts" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -68,7 +70,7 @@
       <recent name="C:\Users\i\IdeaProjects\simple-sdp\src\services" />
     </key>
   </component>
-  <component name="RunManager" selected="Jest.sdpReader tests.parse valid sdp">
+  <component name="RunManager" selected="Jest.sdpReader tests (2)">
     <configuration name="lineTimeParser tests" type="JavaScriptTestRunnerJest" temporary="true" nameIsGenerated="true">
       <node-interpreter value="project" />
       <node-options value="" />
@@ -138,10 +140,10 @@
     </configuration>
     <recent_temporary>
       <list>
+        <item itemvalue="Jest.sdpReader tests (2)" />
         <item itemvalue="Jest.sdpReader tests.parse valid sdp" />
         <item itemvalue="Jest.lineTimeParser tests" />
         <item itemvalue="Jest.lineTimeParser tests.correct sfx" />
-        <item itemvalue="Jest.sdpReader tests (2)" />
         <item itemvalue="Jest.sdpReader tests (1)" />
       </list>
     </recent_temporary>
@@ -155,7 +157,7 @@
       <option name="presentableId" value="Default" />
       <updated>1679120964314</updated>
       <workItem from="1679120965334" duration="24417000" />
-      <workItem from="1679285289099" duration="4472000" />
+      <workItem from="1679285289099" duration="8377000" />
     </task>
     <task id="LOCAL-00001" summary="feat(sdp-parser): parsing of the basic (non-section specific) attributes">
       <created>1679212768322</created>
@@ -199,7 +201,14 @@
       <option name="project" value="LOCAL" />
       <updated>1679288672423</updated>
     </task>
-    <option name="localTasksCounter" value="7" />
+    <task id="LOCAL-00007" summary="chore: first readme block">
+      <created>1679290142665</created>
+      <option name="number" value="00007" />
+      <option name="presentableId" value="LOCAL-00007" />
+      <option name="project" value="LOCAL" />
+      <updated>1679290142665</updated>
+    </task>
+    <option name="localTasksCounter" value="8" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -212,6 +221,7 @@
     <MESSAGE value="feat(sdp-parser): basic media parser" />
     <MESSAGE value="feat(sdp-parser): all modifiers except a=" />
     <MESSAGE value="feat(sdp-parser): basic attributes parser" />
-    <option name="LAST_COMMIT_MESSAGE" value="feat(sdp-parser): basic attributes parser" />
+    <MESSAGE value="chore: first readme block" />
+    <option name="LAST_COMMIT_MESSAGE" value="chore: first readme block" />
   </component>
 </project>
