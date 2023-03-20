@@ -1,6 +1,7 @@
 import {Sdp, SdpMediaSection} from "../../../../inerfaces/Sdp";
 import {setIceAttr} from "./set-ice-attr";
 import {setDtlsAttr} from "./set-dtls-attr";
+import {groupParser} from "./group.parser";
 
 
 export const aLineParser = <T extends Sdp | SdpMediaSection>(section: T, line: string): T => {
@@ -34,6 +35,9 @@ export const aLineParser = <T extends Sdp | SdpMediaSection>(section: T, line: s
       break;
     case 'sendrecv'||'sendonly'||'recvonly'||'inactive':
       (section as SdpMediaSection).direction = type;
+      break;
+    case 'group':
+      groupParser(section as Sdp,value);
       break;
     default:
       if(section.attributes[type]){

@@ -59,6 +59,7 @@ interface Sdp extends SdpCommonAttributes{
   media?: SdpMediaSection[];
   bandwidthInformation?: SdpBandwidthInformation;
   connectionInformation?: SdpConnectionInformation;
+  group?:SdpGroup[]
 }
 
 /**
@@ -291,9 +292,29 @@ interface SdpPair {
   answer: Sdp;
 }
 
+/**
+ * rfc5888 and rfc9143 groups
+ */
+interface SdpGroup{
+  /**
+   * Semantics                          Token  Reference
+   * ---------------------------------  -----  -----------
+   * Lip Synchronization                 LS     [RFC5888]
+   * Flow Identification                 FID    [RFC5888]
+   * Single Reservation Flow             SRF    [RFC3524]
+   * Alternative Network Address Types   ANAT   [RFC4091]
+   * Forward Error Correction            FEC    [RFC4756]
+   * Decoding Dependency                 DDP    [RFC5583]
+   * Bundle                              BUNDLE [RFC9143]
+   */
+  token: 'LS'|'FID'|'SRF'|'ANAT'|'FEC'|'DDP'|'BUNDLE'
+  mids: string[]
+}
+
 export {
   Sdp,
   SdpPair,
+  SdpGroup,
   SdpOrigin,
   SdpTiming,
   SdpAttribute,

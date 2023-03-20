@@ -1,6 +1,6 @@
 {
   "name": "@irbisadm/simple-sdp",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "license": "MIT",
   "description": "WebRTC SDP parser and validator influenced by pjsip library.",
   "author": {
@@ -14,6 +14,7 @@
   "module": "./dist/index.mjs",
   "main": "./dist/index.mjs",
   "types": "./types/index.d.ts",
+  "keywords": ["sdp","webrtc","rfc8866","sdp parser","sdp validator"],
   "files": [
     "./dist/index.mjs",
     "./types/index.d.ts",
