@@ -1,4 +1,10 @@
-interface Sdp {
+interface SdpCommonAttributes{
+  attributes?: Record<string, SdpAttribute>;
+  ice?:SdpIceAttributes;
+  dtls?:SdpDtlsAttribute;
+}
+
+interface Sdp extends SdpCommonAttributes{
   protocolVersion?: number;
   /**
    * The "o=" field gives the originator of the session (her username and the address of the user's host) plus a session
@@ -33,7 +39,7 @@ interface Sdp {
   uri?: string;
   emailAddress?: string;
   phoneNumber?: string;
-  encryptionKeys?: SdpEncryptionKey[]
+  encryptionKeys?: SdpEncryptionKey[];
   /**
    *  The "t=" lines specify the start and stop times for a session. Multiple "t=" lines MAY be used if a session is
    *  active at multiple irregularly spaced times; each additional "t=" line specifies an additional period of time for
@@ -41,7 +47,7 @@ interface Sdp {
    *  used in addition to, and following, a "t=" line -- in which case the "t=" line specifies the start and stop times
    *  of the repeat sequence.
    */
-  timing?: SdpTiming[]
+  timing?: SdpTiming[];
   /**
    * "r=" fields specify repeat times for a session. For example, if a session is active at 10am on Monday and 11am on
    * Tuesday for one hour each week for three months, then the <start-time> in the corresponding "t=" field would be the
@@ -49,11 +55,12 @@ interface Sdp {
    * be 1 hour, and the offsets would be zero and 25 hours. The corresponding "t=" field stop time would be the NTP
    * representation of the end of the last session three months later.
    */
-  repeat?: SdpRepeatTimes[]
-  media?: SdpMediaSection[]
-  bandwidthInformation?: SdpBandwidthInformation
-  connectionInformation?: SdpConnectionInformation
+  repeat?: SdpRepeatTimes[];
+  media?: SdpMediaSection[];
+  bandwidthInformation?: SdpBandwidthInformation;
+  connectionInformation?: SdpConnectionInformation;
 }
+
 /**
  * The "o=" field gives the originator of the session (her username and the address of the user's host) plus a session
  * identifier and version number:
@@ -86,7 +93,7 @@ interface SdpOrigin {
    * <addrtype> is a text string giving the type of the address that follows. Initially "IP4" and "IP6" are defined,
    * but other values MAY be registered in the future
    */
-  addrType?: 'IP4' | 'IP6'
+  addrType?: 'IP4' | 'IP6';
   /**
    * <unicast-address> is the address of the machine from which the session was created. For an address type of IP4,
    * this is either the fully qualified domain name of the machine or the dotted-decimal representation of the
@@ -99,6 +106,7 @@ interface SdpOrigin {
    */
   unicastAddress: string;
 }
+
 /**
  *  The "t=" lines specify the start and stop times for a session. Multiple "t=" lines MAY be used if a session is
  *  active at multiple irregularly spaced times; each additional "t=" line specifies an additional period of time for
@@ -110,6 +118,7 @@ interface SdpTiming {
   startTime: number;
   stopTime: number;
 }
+
 /**
  * "r=" fields specify repeat times for a session. For example, if a session is active at 10am on Monday and 11am on
  * Tuesday for one hour each week for three months, then the <start-time> in the corresponding "t=" field would be the
@@ -122,6 +131,7 @@ interface SdpRepeatTimes {
   activeDuration: number;
   offsets?: number[]
 }
+
 /**
  * If transported over a secure and trusted channel, the Session Description Protocol MAY be used to convey encryption
  * keys. A simple mechanism for key exchange is provided by the key field ("k="), although this is primarily
@@ -228,46 +238,70 @@ interface SdpConnectionInformation {
    * <addrtype> is a text string giving the type of the address that follows. Initially "IP4" and "IP6" are defined,
    * but other values MAY be registered in the future
    */
-  addrType?: 'IP4' | 'IP6'
+  addrType?: 'IP4' | 'IP6';
   /**
    * <base multicast address>[/<ttl>]/<number of addresses>
    */
   connectionAddress: string;
 }
-interface SdpBaseMediaSection {
-  ports: number[],
-  proto: string,
-  bandwidthInformation?: SdpBandwidthInformation
-  connectionInformation?: SdpConnectionInformation
+
+interface SdpBaseMediaSection extends SdpCommonAttributes{
+  mid?: string;
+  direction?: 'sendrecv'|'sendonly'|'recvonly'|'inactive';
+  ports: number[];
+  proto: string;
+  bandwidthInformation?: SdpBandwidthInformation;
+  connectionInformation?: SdpConnectionInformation;
 }
+
 interface SdpAVMediaSection extends SdpBaseMediaSection {
-  type: 'audio' | 'video',
-  fmtp?: number[]
+  type: 'audio' | 'video';
+  fmtp?: number[];
 }
+
 interface SdpAppMediaSection extends SdpBaseMediaSection {
-  type: 'application',
-  description?: string
+  type: 'application';
+  description?: string;
 }
+
 interface SdpOtherMediaSection extends SdpBaseMediaSection {
-  type: 'text' | 'message' | string,
-  fmtp?: string[]
+  type: 'text' | 'message' | string;
+  fmtp?: string[];
 }
+
 type SdpMediaSection = SdpAVMediaSection | SdpAppMediaSection | SdpOtherMediaSection;
 
 
+type SdpAttribute = string | boolean | string[] ;
+
+interface SdpIceAttributes {
+  ufrag: string;
+  pwd: string;
+  options: string[];
+}
+
+interface SdpDtlsAttribute {
+  algorithm: string;
+  fingerprint: string;
+  setup: 'active' | 'passive' | 'actpass';
+}
+
 interface SdpPair {
-  offer: Sdp,
-  answer: Sdp
+  offer: Sdp;
+  answer: Sdp;
 }
 
 export {
   Sdp,
-  SdpMediaSection,
   SdpPair,
   SdpOrigin,
   SdpTiming,
+  SdpAttribute,
   SdpRepeatTimes,
+  SdpMediaSection,
+  SdpIceAttributes,
   SdpEncryptionKey,
+  SdpDtlsAttribute,
   SdpAVMediaSection,
   SdpAppMediaSection,
   SdpOtherMediaSection,

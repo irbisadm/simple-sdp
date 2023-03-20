@@ -12,6 +12,7 @@ import {kLineParser} from "./parsers/k-line.parser";
 import {mLineParser} from "./parsers/m-line.parser";
 import {bLineParser} from "./parsers/b-line.parser";
 import {cLineParser} from "./parsers/c-line.parser";
+import {aLineParser} from "./parsers/a-line.parser";
 
 const parse = (sdp: string): Sdp => {
   const sdpLines = sdp.split("\r\n");
@@ -91,6 +92,11 @@ const parse = (sdp: string): Sdp => {
         }
         break;
       case 'a':
+        if(!activeSection){
+          aLineParser(parsedSdp,line);
+        } else {
+          aLineParser(activeSection,line);
+        }
         break;
       default:
         throw Error(`Unknown line type "${line[0]}"`);
