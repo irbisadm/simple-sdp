@@ -12,9 +12,9 @@ const avLineParser = (mediaParts: string[]): SdpAVMediaSection => {
     proto: mediaParts[2],
   }
   if (mediaParts.length > 3) {
-    section.fmtp = [];
+    section.fmt = [];
     for (let i = 3; i < mediaParts.length; i++) {
-      section.fmtp.push({ payloadType: parseInt(mediaParts[i])});
+      section.fmt.push({ payloadType: parseInt(mediaParts[i])});
     }
   }
   return section;
@@ -45,7 +45,9 @@ const unknownLineParser = (mediaParts: string[]): SdpOtherMediaSection => {
 export const mLineParser = (line: string): SdpMediaSection => {
   const mediaParts = linePartsParser(line, 'm');
   switch (mediaParts[0]) {
-    case 'audio' || 'video':
+    case 'audio':
+      return avLineParser(mediaParts);
+    case 'video':
       return avLineParser(mediaParts);
     case 'application':
       return appLineParser(mediaParts);

@@ -258,7 +258,7 @@ interface SdpBaseMediaSection extends SdpCommonAttributes{
 
 interface SdpAVMediaSection extends SdpBaseMediaSection {
   type: 'audio' | 'video';
-  fmtp?: SdpAVFmtp[];
+  fmt?: SdpAVFmtp[];
   msid?:SdpAVMsid
 }
 
@@ -270,8 +270,14 @@ interface SdpAVMsid{
 interface SdpAVFmtp{
   payloadType:number;
   contentType?:string;
-  rtcpRb?:string[],
-  fmtp?:Record<string,string|number|boolean>
+  /**
+   * rfc 4585
+   */
+  rtcpFeedback?:string[],
+  /**
+   * RFC 8851 && RFC 6184
+   */
+  formatParameters?:Record<string,string|number|boolean>
 }
 
 interface SdpAppMediaSection extends SdpBaseMediaSection {

@@ -1,8 +1,11 @@
-import {Sdp, SdpMediaSection} from "../../../../inerfaces/Sdp";
+import {Sdp, SdpAVMediaSection, SdpMediaSection} from "../../../../inerfaces/Sdp";
 import {setIceAttr} from "./set-ice-attr";
 import {setDtlsAttr} from "./set-dtls-attr";
 import {groupParser} from "./group.parser";
-import {extmapParser} from "./extmap-parser";
+import {extmapParser} from "./extmap.parser";
+import {rtpmapParser} from "./rtpmap.parser";
+import {rtcpFbParser} from "./rtcp-fb.parser";
+import {fmtpParser} from "./fmtp.parser";
 
 
 export const aLineParser = <T extends Sdp | SdpMediaSection>(section: T, line: string): T => {
@@ -42,6 +45,15 @@ export const aLineParser = <T extends Sdp | SdpMediaSection>(section: T, line: s
       break;
     case 'extmap':
       extmapParser(section as SdpMediaSection, value);
+      break;
+    case 'rtpmap':
+      rtpmapParser(section as SdpAVMediaSection, value);
+      break;
+    case 'rtcp-fb':
+      rtcpFbParser(section as SdpAVMediaSection, value);
+      break;
+    case 'fmtp':
+      fmtpParser(section as SdpAVMediaSection, value);
       break;
     default:
       if(section.attributes[type]){
