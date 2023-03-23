@@ -253,11 +253,25 @@ interface SdpBaseMediaSection extends SdpCommonAttributes{
   proto: string;
   bandwidthInformation?: SdpBandwidthInformation;
   connectionInformation?: SdpConnectionInformation;
+  extmap?:Record<number, string>
 }
 
 interface SdpAVMediaSection extends SdpBaseMediaSection {
   type: 'audio' | 'video';
-  fmtp?: number[];
+  fmtp?: SdpAVFmtp[];
+  msid?:SdpAVMsid
+}
+
+interface SdpAVMsid{
+  streamId:string;
+  trackId:string;
+}
+
+interface SdpAVFmtp{
+  payloadType:number;
+  contentType?:string;
+  rtcpRb?:string[],
+  fmtp?:Record<string,string|number|boolean>
 }
 
 interface SdpAppMediaSection extends SdpBaseMediaSection {

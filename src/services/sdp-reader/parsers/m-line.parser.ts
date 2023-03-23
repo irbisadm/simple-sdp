@@ -14,7 +14,7 @@ const avLineParser = (mediaParts: string[]): SdpAVMediaSection => {
   if (mediaParts.length > 3) {
     section.fmtp = [];
     for (let i = 3; i < mediaParts.length; i++) {
-      section.fmtp.push(parseInt(mediaParts[i]));
+      section.fmtp.push({ payloadType: parseInt(mediaParts[i])});
     }
   }
   return section;

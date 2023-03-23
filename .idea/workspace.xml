@@ -4,13 +4,12 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="9e3c6215-aa49-49be-a26b-710864bb9dcf" name="Changes" comment="chore: npm publush (v0.1.0) and readme badges">
-      <change afterPath="$PROJECT_DIR$/src/services/sdp-reader/parsers/a-line.parser/group.parser.ts" afterDir="false" />
+    <list default="true" id="9e3c6215-aa49-49be-a26b-710864bb9dcf" name="Changes" comment="feat(sdp-parser): group parser">
+      <change afterPath="$PROJECT_DIR$/src/services/sdp-reader/parsers/a-line.parser/extmap-parser.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/package.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/readme.md" beforeDir="false" afterPath="$PROJECT_DIR$/readme.md" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/inerfaces/Sdp.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/inerfaces/Sdp.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/services/sdp-reader/parsers/a-line.parser/index.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/services/sdp-reader/parsers/a-line.parser/index.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/services/sdp-reader/parsers/m-line.parser.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/services/sdp-reader/parsers/m-line.parser.ts" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -26,6 +25,7 @@
     <option name="RECENT_TEMPLATES">
       <list>
         <option value="package.json" />
+        <option value="tsconfig.json" />
         <option value="TypeScript File" />
       </list>
     </option>
@@ -167,7 +167,7 @@
       <updated>1679120964314</updated>
       <workItem from="1679120965334" duration="24417000" />
       <workItem from="1679285289099" duration="8952000" />
-      <workItem from="1679334189586" duration="2714000" />
+      <workItem from="1679334189586" duration="4825000" />
     </task>
     <task id="LOCAL-00001" summary="feat(sdp-parser): parsing of the basic (non-section specific) attributes">
       <created>1679212768322</created>
@@ -225,11 +225,29 @@
       <option name="project" value="LOCAL" />
       <updated>1679294837098</updated>
     </task>
-    <option name="localTasksCounter" value="9" />
+    <task id="LOCAL-00009" summary="feat(sdp-parser): group parser">
+      <created>1679337148259</created>
+      <option name="number" value="00009" />
+      <option name="presentableId" value="LOCAL-00009" />
+      <option name="project" value="LOCAL" />
+      <updated>1679337148259</updated>
+    </task>
+    <option name="localTasksCounter" value="10" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
     <option name="version" value="3" />
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
   </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="feat(sdp-parser): parsing of the basic (non-section specific) attributes" />
@@ -240,6 +258,7 @@
     <MESSAGE value="feat(sdp-parser): basic attributes parser" />
     <MESSAGE value="chore: first readme block" />
     <MESSAGE value="chore: npm publush (v0.1.0) and readme badges" />
-    <option name="LAST_COMMIT_MESSAGE" value="chore: npm publush (v0.1.0) and readme badges" />
+    <MESSAGE value="feat(sdp-parser): group parser" />
+    <option name="LAST_COMMIT_MESSAGE" value="feat(sdp-parser): group parser" />
   </component>
 </project>

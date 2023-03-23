@@ -2,6 +2,7 @@ import {Sdp, SdpMediaSection} from "../../../../inerfaces/Sdp";
 import {setIceAttr} from "./set-ice-attr";
 import {setDtlsAttr} from "./set-dtls-attr";
 import {groupParser} from "./group.parser";
+import {extmapParser} from "./extmap-parser";
 
 
 export const aLineParser = <T extends Sdp | SdpMediaSection>(section: T, line: string): T => {
@@ -38,6 +39,9 @@ export const aLineParser = <T extends Sdp | SdpMediaSection>(section: T, line: s
       break;
     case 'group':
       groupParser(section as Sdp,value);
+      break;
+    case 'extmap':
+      extmapParser(section as SdpMediaSection, value);
       break;
     default:
       if(section.attributes[type]){
