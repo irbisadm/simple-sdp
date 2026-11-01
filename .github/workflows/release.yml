@@ -44,9 +44,11 @@ jobs:
             echo "release $GITHUB_REF_NAME exists"
             exit 0
           fi
+          # a pre-release (v1.3.0-rc.1) must not become the latest release
+          case "$GITHUB_REF_NAME" in *-*) prerelease=--prerelease ;; *) prerelease= ;; esac
           cd wasm/build
           sha256sum simple-sdp.wasm > SHA256SUMS
-          gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" --notes-file ../../notes.md \
+          gh release create "$GITHUB_REF_NAME" $prerelease --title "$GITHUB_REF_NAME" --notes-file ../../notes.md \
             simple-sdp.wasm SHA256SUMS
       - name: Publish to npm
         run: |
