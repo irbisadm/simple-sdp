@@ -3,7 +3,7 @@
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). The project
 follows [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [1.2.1-rc.1] — 2026-11-01
 
 ### Changed
 - Releases are published to npm by CI (`release.yml`) with npm trusted publishing, so
