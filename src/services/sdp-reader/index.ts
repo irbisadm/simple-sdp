@@ -54,7 +54,7 @@ const parse = (sdp: string): Sdp => {
         parsedSdp.sessionInformation = iLineParser(line);
         break;
       case 'u':
-        parsedSdp.sessionInformation = uLineParser(line);
+        parsedSdp.uri = uLineParser(line);
         break;
       case 'e':
         parsedSdp.emailAddress = eLineParser(line);
