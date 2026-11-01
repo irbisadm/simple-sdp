@@ -1,5 +1,11 @@
+type SdpDirection = 'sendrecv' | 'sendonly' | 'recvonly' | 'inactive';
+
 interface SdpCommonAttributes{
   attributes?: Record<string, SdpAttribute>;
+  /**
+   * RFC 8866 §6.7. At session level it is the default for all media sections.
+   */
+  direction?: SdpDirection;
   ice?:SdpIceAttributes;
   dtls?:SdpDtlsAttribute;
 }
@@ -248,7 +254,6 @@ interface SdpConnectionInformation {
 
 interface SdpBaseMediaSection extends SdpCommonAttributes{
   mid?: string;
-  direction?: 'sendrecv'|'sendonly'|'recvonly'|'inactive';
   ports: number[];
   proto: string;
   bandwidthInformation?: SdpBandwidthInformation;
@@ -333,6 +338,7 @@ interface SdpGroup{
 
 export {
   Sdp,
+  SdpDirection,
   SdpPair,
   SdpGroup,
   SdpOrigin,

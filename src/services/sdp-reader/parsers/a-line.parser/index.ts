@@ -37,8 +37,11 @@ export const aLineParser = <T extends Sdp | SdpMediaSection>(section: T, line: s
     case 'setup':
       setDtlsAttr(section, 'setup', value as 'active' | 'passive' | 'actpass');
       break;
-    case 'sendrecv'||'sendonly'||'recvonly'||'inactive':
-      (section as SdpMediaSection).direction = type;
+    case 'sendrecv':
+    case 'sendonly':
+    case 'recvonly':
+    case 'inactive':
+      section.direction = type;
       break;
     case 'group':
       groupParser(section as Sdp,value);
