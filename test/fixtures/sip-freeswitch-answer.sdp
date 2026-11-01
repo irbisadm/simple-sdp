@@ -1,0 +1,11 @@
+v=0
+o=FreeSWITCH 1264646570 1264646571 IN IP4 192.168.5.75
+s=FreeSWITCH
+c=IN IP4 192.168.5.75
+t=0 0
+m=audio 12280 RTP/AVP 0 101
+a=rtpmap:0 PCMU/8000
+a=rtpmap:101 telephone-event/8000
+a=fmtp:101 0-16
+a=silenceSupp:off - - - -
+a=ptime:20

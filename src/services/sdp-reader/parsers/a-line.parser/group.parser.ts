@@ -1,16 +1,10 @@
-import {Sdp, SdpGroup} from "../../../../inerfaces/Sdp";
+import {SdpGroup} from "../../../../interfaces/Sdp";
 
-export const groupParser = (section:Sdp, value: string)=>{
-  if(!section.group){
-    section.group = [];
+/** `a=group:<semantics> *(SP <identification-tag>)` — RFC 5888 §5 */
+export const groupParser = (value: string): SdpGroup => {
+  const [semantics, ...mids] = value.split(' ');
+  if (semantics.length === 0 || mids.some(mid => mid.length === 0)) {
+    throw new Error('expected "<semantics> <mid> ..."');
   }
-  const [token,...mids] = value.split(' ');
-  const availableTokens:SdpGroup["token"][] = ['LS','FID','SRF','ANAT','FEC','DDP','BUNDLE'];
-  if(availableTokens.includes(token as SdpGroup["token"])) {
-    section.group.push({
-      token: token as SdpGroup["token"],
-      mids
-    })
-  }
-  // else ignore unknown group;
+  return {semantics, mids};
 }

@@ -1,0 +1,88 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>simple-sdp fixture capture</title>
+<script>
+// Generates real offer/answer pairs in the running browser and POSTs them back
+// to capture.mjs. No STUN/TURN servers are configured, so only host candidates
+// (mDNS-obfuscated by default in Chrome and Firefox) can appear.
+
+const waitIce = (pc) => new Promise((resolve) => {
+  if (pc.iceGatheringState === 'complete') return resolve();
+  const t = setTimeout(resolve, 3000);
+  pc.addEventListener('icegatheringstatechange', () => {
+    if (pc.iceGatheringState === 'complete') { clearTimeout(t); resolve(); }
+  });
+});
+
+const videoTrack = () => {
+  const canvas = document.createElement('canvas');
+  canvas.width = 1280; canvas.height = 720;
+  const ctx = canvas.getContext('2d');
+  setInterval(() => { ctx.fillStyle = `hsl(${Date.now() % 360},50%,50%)`; ctx.fillRect(0, 0, 1280, 720); }, 33);
+  return canvas.captureStream(30).getVideoTracks()[0];
+};
+const audioTrack = () => {
+  const ac = new AudioContext();
+  const osc = ac.createOscillator();
+  const dst = ac.createMediaStreamDestination();
+  osc.connect(dst); osc.start();
+  return dst.stream.getAudioTracks()[0];
+};
+
+async function negotiate(setup) {
+  const a = new RTCPeerConnection();
+  const b = new RTCPeerConnection();
+  await setup(a);
+  const offer = await a.createOffer();
+  await a.setLocalDescription(offer);
+  await waitIce(a);
+  const offerSdp = a.localDescription.sdp;
+  await b.setRemoteDescription({type: 'offer', sdp: offerSdp});
+  const answer = await b.createAnswer();
+  await b.setLocalDescription(answer);
+  await waitIce(b);
+  const answerSdp = b.localDescription.sdp;
+  a.close(); b.close();
+  return {offer: offerSdp, answer: answerSdp};
+}
+
+const scenarios = {
+  'audio-video': (pc) => {
+    const stream = new MediaStream([audioTrack(), videoTrack()]);
+    stream.getTracks().forEach((t) => pc.addTrack(t, stream));
+  },
+  'audio-only': (pc) => {
+    const stream = new MediaStream([audioTrack()]);
+    pc.addTrack(stream.getAudioTracks()[0], stream);
+  },
+  'datachannel': (pc) => {
+    pc.createDataChannel('chat');
+  },
+  'simulcast': (pc) => {
+    const stream = new MediaStream([audioTrack(), videoTrack()]);
+    pc.addTransceiver(stream.getAudioTracks()[0], {direction: 'sendrecv', streams: [stream]});
+    pc.addTransceiver(stream.getVideoTracks()[0], {
+      direction: 'sendonly',
+      streams: [stream],
+      sendEncodings: [
+        {rid: 'q', scaleResolutionDownBy: 4, maxBitrate: 150000},
+        {rid: 'h', scaleResolutionDownBy: 2, maxBitrate: 500000},
+        {rid: 'f', maxBitrate: 2500000},
+      ],
+    });
+  },
+};
+
+(async () => {
+  const results = {userAgent: navigator.userAgent, scenarios: {}};
+  for (const [name, setup] of Object.entries(scenarios)) {
+    try {
+      results.scenarios[name] = await negotiate(setup);
+    } catch (e) {
+      results.scenarios[name] = {error: String(e)};
+    }
+  }
+  await fetch('/result', {method: 'POST', body: JSON.stringify(results)});
+  document.title = 'done';
+})();
+</script>

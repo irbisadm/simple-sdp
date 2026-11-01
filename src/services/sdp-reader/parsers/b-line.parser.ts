@@ -1,11 +1,14 @@
-import {SdpBandwidthInformation} from "../../../inerfaces/Sdp";
+import {SdpBandwidthInformation} from "../../../interfaces/Sdp";
 import {stringToIntParser} from "./string-to-int.parser";
 
-export const bLineParser = (line: string): SdpBandwidthInformation => {
-  const lineContent = line.replace('k=', '');
-  const [bwtype, bandwidth] = lineContent.split(':');
+/** `b=<bwtype>:<bandwidth>` — RFC 8866 §5.8 */
+export const bLineParser = (value: string): SdpBandwidthInformation => {
+  const idx = value.indexOf(':');
+  if (idx <= 0) {
+    throw new Error('expected "<bwtype>:<bandwidth>"');
+  }
   return {
-    bwtype,
-    bandwidth: stringToIntParser(bandwidth)
+    bwtype: value.slice(0, idx),
+    bandwidth: stringToIntParser(value.slice(idx + 1), 'bandwidth'),
   }
 }

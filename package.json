@@ -1,8 +1,8 @@
 {
   "name": "@irbisadm/simple-sdp",
-  "version": "0.1.1",
+  "version": "1.0.0",
   "license": "MIT",
-  "description": "WebRTC SDP parser and validator influenced by pjsip library.",
+  "description": "Parse, modify, write and validate SDP (RFC 8866) for WebRTC and SIP. Typed ICE, DTLS, BUNDLE, simulcast, codecs. Zero dependencies.",
   "author": {
     "email": "i@irbisadm.dev",
     "name": "Igor Sheko",
@@ -14,11 +14,33 @@
   "module": "./dist/index.mjs",
   "main": "./dist/index.mjs",
   "types": "./types/index.d.ts",
-  "keywords": ["sdp","webrtc","rfc8866","sdp parser","sdp validator"],
+  "exports": {
+    ".": {
+      "types": "./types/index.d.ts",
+      "import": "./dist/index.mjs",
+      "default": "./dist/index.mjs"
+    }
+  },
+  "sideEffects": false,
+  "keywords": [
+    "sdp",
+    "webrtc",
+    "sip",
+    "rfc8866",
+    "rfc4566",
+    "sdp-writer",
+    "sdp-validator",
+    "sdp-parser",
+    "typescript",
+    "parser",
+    "simulcast",
+    "ice"
+  ],
   "files": [
     "./dist/index.mjs",
     "./types/index.d.ts",
-    "./readme.md"
+    "./readme.md",
+    "./CHANGELOG.md"
   ],
   "devDependencies": {
     "@rollup/plugin-replace": "^5.0.2",
@@ -38,6 +60,7 @@
   },
   "scripts": {
     "build": "rollup -c",
-    "test": "jest"
+    "test": "jest",
+    "typecheck": "tsc --noEmit"
   }
 }

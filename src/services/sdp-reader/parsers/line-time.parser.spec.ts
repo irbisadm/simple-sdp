@@ -6,7 +6,7 @@ describe('lineTimeParser tests', () => {
     expect(parsedTime).toBe(67536575765);
   })
   test('correct sfx', () => {
-    const allowedSfx = {'d': 86400, 'h': 86400, 'm': 60, 's': 1} as const;
+    const allowedSfx = {'d': 86400, 'h': 3600, 'm': 60, 's': 1} as const;
     const baseTime = 30;
     for (const sfx in allowedSfx) {
       //@ts-ignore
@@ -28,3 +28,15 @@ describe('lineTimeParser tests', () => {
     expect(() => lineTimeParser('a14bc')).toThrow();
   })
 })
+describe('lineTimeParser — RFC 8866 §5.10 examples', () => {
+  test.each([
+    ['7d', 604800],
+    ['1h', 3600],
+    ['25h', 90000],
+    ['0', 0],
+    ['90m', 5400],
+    ['15s', 15],
+  ])('%s -> %i seconds', (input, expected) => {
+    expect(lineTimeParser(input)).toBe(expected);
+  });
+});

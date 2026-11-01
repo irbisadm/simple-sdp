@@ -1,17 +1,19 @@
-import {SdpOrigin} from "../../../inerfaces/Sdp";
-import {linePartsParser} from "./line-parts.parser";
+import {SdpOrigin} from "../../../interfaces/Sdp";
 
-export const oLineParser = (line: string): SdpOrigin => {
- const originParts = linePartsParser(line,'o');
- const sessVersion = parseInt(originParts[2]);
- const netType = originParts[3] === 'IN'?'IN':void 0;
- const addrType = ['IP4','IP6'].includes(originParts[4])?originParts[4] as 'IP4'|'IP6':void 0;
- return {
-  username: originParts[0],
-  sessId: originParts[1],
-  sessVersion,
-  netType,
-  addrType,
-  unicastAddress: originParts[5]
- }
+const isDigits = /^\d+$/;
+
+/** `o=<username> <sess-id> <sess-version> <nettype> <addrtype> <unicast-address>` — RFC 8866 §5.2 */
+export const oLineParser = (value: string): SdpOrigin => {
+  const parts = value.split(' ');
+  if (parts.length !== 6) {
+    throw new Error('expected "<username> <sess-id> <sess-version> <nettype> <addrtype> <unicast-address>"');
+  }
+  const [username, sessId, sessVersion, netType, addrType, unicastAddress] = parts;
+  if (!isDigits.test(sessId)) {
+    throw new Error(`sess-id "${sessId}" is not numeric`);
+  }
+  if (!isDigits.test(sessVersion)) {
+    throw new Error(`sess-version "${sessVersion}" is not numeric`);
+  }
+  return {username, sessId, sessVersion, netType, addrType, unicastAddress};
 }

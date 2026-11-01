@@ -1,14 +1,11 @@
-import {SdpEncryptionKey} from "../../../inerfaces/Sdp";
+import {SdpEncryptionKey} from "../../../interfaces/Sdp";
 
-export const kLineParser = (line: string): SdpEncryptionKey => {
-  const lineContent = line.replace('k=', '');
-  const [method,encryptionKey] = lineContent.split(':');
-  const allowedMethod = ['clear','base64','uri','prompt'];
-  if(!allowedMethod.includes(method)){
-    throw new Error(`Encryption method "${method}" is not supported by RFC-4566`)
+/** `k=<method>` / `k=<method>:<encryption key>` — RFC 8866 §5.12 */
+export const kLineParser = (value: string): SdpEncryptionKey => {
+  const idx = value.indexOf(':');
+  const method = idx === -1 ? value : value.slice(0, idx);
+  if (method.length === 0) {
+    throw new Error('empty key method');
   }
-  return {
-    method: method as 'clear' | 'base64' | 'uri' | 'prompt',
-    encryptionKey
-  }
+  return idx === -1 ? {method} : {method, encryptionKey: value.slice(idx + 1)};
 }
