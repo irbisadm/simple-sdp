@@ -1,8 +1,8 @@
 {
   "name": "@irbisadm/simple-sdp",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "license": "MIT",
-  "description": "WebRTC SDP parser and validator influenced by pjsip library.",
+  "description": "Strict, typed SDP (RFC 8866) parser for WebRTC and SIP: ICE, DTLS, BUNDLE, simulcast, codecs. Zero dependencies.",
   "author": {
     "email": "i@irbisadm.dev",
     "name": "Igor Sheko",
@@ -17,14 +17,20 @@
   "keywords": [
     "sdp",
     "webrtc",
+    "sip",
     "rfc8866",
-    "sdp parser",
-    "sdp validator"
+    "rfc4566",
+    "sdp-parser",
+    "typescript",
+    "parser",
+    "simulcast",
+    "ice"
   ],
   "files": [
     "./dist/index.mjs",
     "./types/index.d.ts",
-    "./readme.md"
+    "./readme.md",
+    "./CHANGELOG.md"
   ],
   "devDependencies": {
     "@rollup/plugin-replace": "^5.0.2",
