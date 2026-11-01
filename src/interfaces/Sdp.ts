@@ -60,6 +60,31 @@ interface SdpCandidate {
   extensions?: Record<string, string>;
 }
 
+/**
+ * All `a=ssrc:<ssrc-id> <attribute>[:<value>]` lines of one SSRC — RFC 5576 §4.1.
+ * Lines of the same SSRC are merged, in order of first appearance.
+ */
+interface SdpSsrc {
+  id: number;
+  /** Source attributes in their original order, e.g. `cname`, `msid`. Attributes without a value map to null. */
+  attributes: Record<string, string | null>;
+}
+
+/** `a=ssrc-group:<semantics> <ssrc-id> ...` — RFC 5576 §4.2 */
+interface SdpSsrcGroup {
+  /** `FID`, `FEC`, `FEC-FR`, `SIM`, … */
+  semantics: string;
+  ssrcs: number[];
+}
+
+/** `a=msid:<stream id> [<track id>]` — RFC 8830 §2 */
+interface SdpMsid {
+  /** msid-id; `-` means "no stream" */
+  streamId: string;
+  /** msid-appdata; WebRTC uses it for the track id */
+  trackId?: string;
+}
+
 /** Attributes allowed both at session level and at media level */
 interface SdpCommonAttributes {
   /** RFC 8866 §6.7. At session level it is the default for all media sections. */
@@ -197,6 +222,12 @@ interface SdpMediaSection extends SdpCommonAttributes {
   mid?: string;
   /** `a=candidate` — RFC 8839 §5.1 */
   candidates?: SdpCandidate[];
+  /** `a=msid` — RFC 8830. Several lines are allowed. */
+  msid?: SdpMsid[];
+  /** `a=ssrc` — RFC 5576 */
+  ssrcs?: SdpSsrc[];
+  /** `a=ssrc-group` — RFC 5576 */
+  ssrcGroups?: SdpSsrcGroup[];
 }
 
 interface Sdp extends SdpCommonAttributes {
@@ -237,6 +268,9 @@ export {
   SdpGroup,
   SdpSetup,
   SdpCandidate,
+  SdpMsid,
+  SdpSsrc,
+  SdpSsrcGroup,
   SdpExtmap,
   SdpOrigin,
   SdpTiming,

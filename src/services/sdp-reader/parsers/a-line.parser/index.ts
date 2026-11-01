@@ -4,6 +4,7 @@ import {extmapParser} from "./extmap.parser";
 import {rtpmapParser} from "./rtpmap.parser";
 import {fmtpParametersParser} from "./fmtp.parser";
 import {candidateParser} from "./candidate.parser";
+import {msidParser, ssrcGroupParser, ssrcParser} from "./ssrc.parser";
 import {findCodec, flag, once, push, required, splitFirst} from "./helpers";
 
 type Scope = 'session' | 'media';
@@ -90,6 +91,18 @@ const handlers: Record<string, AttributeHandler> = {
   'mid': {
     scopes: MEDIA,
     parse: (section: SdpMediaSection, value) => once(section, 'mid', required(value, 'a=mid:<identification-tag>'), 'mid'),
+  },
+  'msid': {
+    scopes: MEDIA,
+    parse: (section: SdpMediaSection, value) => push(section, 'msid', msidParser(required(value, 'a=msid:<stream id> [<track id>]'))),
+  },
+  'ssrc': {
+    scopes: MEDIA,
+    parse: (section: SdpMediaSection, value) => ssrcParser(section, required(value, 'a=ssrc:<ssrc-id> <attribute>[:<value>]')),
+  },
+  'ssrc-group': {
+    scopes: MEDIA,
+    parse: (section: SdpMediaSection, value) => push(section, 'ssrcGroups', ssrcGroupParser(required(value, 'a=ssrc-group:<semantics> <ssrc-id> ...'))),
   },
   'rtpmap': {
     scopes: MEDIA,

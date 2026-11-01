@@ -197,3 +197,20 @@ describe('ICE candidates in fixtures', () => {
     expect(candidates[0].extensions).toMatchObject({generation: '0'});
   });
 });
+
+describe('msid / ssrc in fixtures', () => {
+  test('Chrome: msid, ssrc, ssrc-group FID', () => {
+    const [, video] = parseFixture('chrome-audio-video-offer').media;
+    expect(video.msid).toEqual([{streamId: '0837a242-61de-426f-8765-e2e827180900', trackId: '491be0d9-ec48-4625-8777-56b456fd0833'}]);
+    expect(video.ssrcGroups).toEqual([{semantics: 'FID', ssrcs: [2967690126, 4091562670]}]);
+    expect(video.ssrcs).toEqual([
+      {id: 2967690126, attributes: {cname: 'Qma7+xZ2EJoypHO7', msid: '0837a242-61de-426f-8765-e2e827180900 491be0d9-ec48-4625-8777-56b456fd0833'}},
+      {id: 4091562670, attributes: {cname: 'Qma7+xZ2EJoypHO7', msid: '0837a242-61de-426f-8765-e2e827180900 491be0d9-ec48-4625-8777-56b456fd0833'}},
+    ]);
+  });
+  test('Firefox: braces in msid, ssrc-group after ssrc', () => {
+    const [audio, video] = parseFixture('firefox-audio-video-offer').media;
+    expect(audio.msid).toEqual([{streamId: '{1eefa43d-7f70-492b-8f86-aedb4c1fbb3b}', trackId: '{0f97a290-9f7c-44b2-8a23-79699870da98}'}]);
+    expect(video.ssrcGroups).toEqual([{semantics: 'FID', ssrcs: [3480968750, 641745922]}]);
+  });
+});
