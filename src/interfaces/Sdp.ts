@@ -38,6 +38,28 @@ interface SdpExtmap {
   attributes?: string;
 }
 
+/** `a=candidate` — RFC 8839 §5.1 (TCP candidates: RFC 6544) */
+interface SdpCandidate {
+  foundation: string;
+  /** 1 = RTP, 2 = RTCP */
+  component: number;
+  /** `UDP`, `TCP`, as written (case is not normalized) */
+  transport: string;
+  priority: number;
+  /** IP address or FQDN (e.g. an mDNS `*.local` name) */
+  address: string;
+  port: number;
+  type: 'host' | 'srflx' | 'prflx' | 'relay' | (string & {});
+  /** `raddr` */
+  relatedAddress?: string;
+  /** `rport` */
+  relatedPort?: number;
+  /** `tcptype` — RFC 6544 */
+  tcpType?: 'active' | 'passive' | 'so' | (string & {});
+  /** Other extension attributes in their original order, e.g. `generation`, `ufrag`, `network-id` */
+  extensions?: Record<string, string>;
+}
+
 /** Attributes allowed both at session level and at media level */
 interface SdpCommonAttributes {
   /** RFC 8866 §6.7. At session level it is the default for all media sections. */
@@ -48,6 +70,8 @@ interface SdpCommonAttributes {
   icePwd?: string;
   /** `a=ice-options` — RFC 8839 §5.6 */
   iceOptions?: string[];
+  /** `a=end-of-candidates` — RFC 8840 §8.2 */
+  endOfCandidates?: boolean;
   /** `a=fingerprint` — RFC 8122 §5. Several lines are allowed. */
   fingerprints?: SdpFingerprint[];
   /** `a=setup` — RFC 4145 §4 */
@@ -171,6 +195,8 @@ interface SdpMediaSection extends SdpCommonAttributes {
   encryptionKey?: SdpEncryptionKey;
   /** `a=mid` — RFC 5888 §4 */
   mid?: string;
+  /** `a=candidate` — RFC 8839 §5.1 */
+  candidates?: SdpCandidate[];
 }
 
 interface Sdp extends SdpCommonAttributes {
@@ -194,6 +220,8 @@ interface Sdp extends SdpCommonAttributes {
   encryptionKey?: SdpEncryptionKey;
   /** `a=group` */
   group?: SdpGroup[];
+  /** `a=ice-lite` — RFC 8839 §5.3 */
+  iceLite?: boolean;
   media: SdpMediaSection[];
 }
 
@@ -208,6 +236,7 @@ export {
   SdpCodec,
   SdpGroup,
   SdpSetup,
+  SdpCandidate,
   SdpExtmap,
   SdpOrigin,
   SdpTiming,

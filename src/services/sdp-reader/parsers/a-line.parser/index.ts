@@ -3,7 +3,8 @@ import {groupParser} from "./group.parser";
 import {extmapParser} from "./extmap.parser";
 import {rtpmapParser} from "./rtpmap.parser";
 import {fmtpParametersParser} from "./fmtp.parser";
-import {findCodec, once, push, required, splitFirst} from "./helpers";
+import {candidateParser} from "./candidate.parser";
+import {findCodec, flag, once, push, required, splitFirst} from "./helpers";
 
 type Scope = 'session' | 'media';
 
@@ -46,6 +47,18 @@ const handlers: Record<string, AttributeHandler> = {
     scopes: BOTH,
     parse: (section: SdpCommonAttributes, value) =>
       once(section, 'iceOptions', required(value, 'a=ice-options:<option> ...').split(' '), 'ice-options'),
+  },
+  'ice-lite': {
+    scopes: SESSION,
+    parse: (section: Sdp, value) => once(section, 'iceLite', flag(value), 'ice-lite'),
+  },
+  'candidate': {
+    scopes: MEDIA,
+    parse: (section: SdpMediaSection, value) => push(section, 'candidates', candidateParser(required(value, 'a=candidate:<candidate>'))),
+  },
+  'end-of-candidates': {
+    scopes: BOTH,
+    parse: (section: SdpCommonAttributes, value) => once(section, 'endOfCandidates', flag(value), 'end-of-candidates'),
   },
   'fingerprint': {
     scopes: BOTH,

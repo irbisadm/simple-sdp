@@ -178,3 +178,22 @@ describe('optional session fields', () => {
     }]);
   });
 });
+
+describe('ICE candidates in fixtures', () => {
+  test('Firefox: candidates and end-of-candidates', () => {
+    const [audio] = parseFixture('firefox-audio-video-offer').media;
+    expect(audio.endOfCandidates).toBe(true);
+    expect(audio.candidates?.length).toBeGreaterThan(0);
+    for (const c of audio.candidates!) {
+      expect(c.address).toMatch(/\.local$/);
+      expect(['UDP', 'TCP']).toContain(c.transport);
+    }
+    expect(audio.attributes?.some(a => a.name === 'candidate')).toBeFalsy();
+  });
+  test('Chrome 2023: candidates with extensions', () => {
+    const sdp = parseFixture('chrome-2023-renegotiation-2-offer');
+    const candidates = sdp.media.flatMap(m => m.candidates ?? []);
+    expect(candidates.length).toBeGreaterThan(0);
+    expect(candidates[0].extensions).toMatchObject({generation: '0'});
+  });
+});
