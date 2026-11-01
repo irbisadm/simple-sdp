@@ -3,7 +3,7 @@
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). The project
 follows [Semantic Versioning](https://semver.org/).
 
-## [1.0.1] — unreleased
+## [1.0.1] — 2026-11-01
 
 ### Fixed
 - Validator accepted malformed `a=fingerprint` values such as `sha-256 AA:BB`.
