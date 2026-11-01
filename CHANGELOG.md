@@ -3,6 +3,16 @@
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). The project
 follows [Semantic Versioning](https://semver.org/).
 
+## [1.2.0] — 2026-11-01
+
+### Added
+- `@irbisadm/simple-sdp/wasm`: the same API and types as the main entry point, run by the
+  WebAssembly module (ESM with top-level await; works in Node.js and with bundlers that
+  handle `new URL(…, import.meta.url)`, checked with Vite 6). The module itself is
+  exported as `@irbisadm/simple-sdp/wasm/simple-sdp.wasm`.
+- Kotlin library on JitPack: `com.github.irbisadm:simple-sdp:v1.2.0` (`jitpack.yml`).
+- GitHub Releases carry `simple-sdp.wasm` for other runtimes (`.github/workflows/release.yml`).
+
 ## [1.1.0] — 2026-11-01
 
 ### Added
