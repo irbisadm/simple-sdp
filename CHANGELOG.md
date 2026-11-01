@@ -3,13 +3,15 @@
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). The project
 follows [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [1.0.1] — unreleased
 
-### Added
-- Validator: `invalid-fingerprint` (error) checks that `a=fingerprint` is colon-separated
+### Fixed
+- Validator accepted malformed `a=fingerprint` values such as `sha-256 AA:BB`.
+  New issue `invalid-fingerprint` (error) checks that `a=fingerprint` is colon-separated
   hex pairs with the digest length of its hash function (md2/md5 16, sha-1 20, sha-224 28,
   sha-256 32, sha-384 48, sha-512 64 bytes); `fingerprint-not-uppercase` (warning).
-  RFC 8122 §5. Previously a truncated value such as `sha-256 AA:BB` passed.
+  RFC 8122 §5.
+- `package.json`: `repository` in the normalized object form (no `npm publish` warning).
 
 ## [1.0.0] — 2026-11-01
 
