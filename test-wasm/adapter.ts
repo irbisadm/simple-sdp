@@ -80,4 +80,4 @@ const validate = (input: Sdp | string, options: SdpValidateOptions = {}): SdpIss
 export const sdpReader = {parse, isValid};
 export const sdpWriter = {write};
 export const sdpValidator = {validate};
-export const version = '1.0.1';
+export const version: string = require('../package.json').version;
