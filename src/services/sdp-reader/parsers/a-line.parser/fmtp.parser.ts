@@ -1,3 +1,5 @@
+import {setOwn} from "./helpers";
+
 /**
  * `a=fmtp:<format> <format specific parameters>` — RFC 8866 §6.15.
  * Parameters are `;`-separated `name=value` pairs; whitespace around `;` is dropped.
@@ -12,9 +14,9 @@ export const fmtpParametersParser = (params: string): Record<string, string | nu
     }
     const idx = param.indexOf('=');
     if (idx === -1) {
-      result[param] = null;
+      setOwn(result, param, null);
     } else {
-      result[param.slice(0, idx)] = param.slice(idx + 1);
+      setOwn(result, param.slice(0, idx), param.slice(idx + 1));
     }
   }
   return result;

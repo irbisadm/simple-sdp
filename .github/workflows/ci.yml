@@ -23,3 +23,33 @@ jobs:
       - run: yarn typecheck
       - run: yarn test
       - run: yarn build
+      - name: Build the AssemblyScript port
+        run: yarn asbuild
+      - name: Committed platform copies of the wasm are up to date
+        run: git diff --exit-code -- platforms
+      - name: Test suites against the wasm build
+        run: yarn test:wasm
+
+  kotlin:
+    name: Kotlin (JVM / Android)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: platforms/kotlin
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - uses: gradle/actions/setup-gradle@v4
+      - run: ./gradlew test
+
+  swift:
+    name: Swift (WasmKit)
+    runs-on: ubuntu-latest
+    container: swift:6.3
+    steps:
+      - uses: actions/checkout@v4
+      # release: WasmKit built in debug mode is orders of magnitude slower
+      - run: swift test -c release

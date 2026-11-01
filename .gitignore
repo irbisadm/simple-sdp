@@ -8,3 +8,12 @@ coverage
 .idea/
 *.iml
 .vscode/
+
+# AssemblyScript build output (the release .wasm is synced into platforms/)
+wasm/build
+
+# Gradle / SwiftPM
+.gradle/
+build/
+.build/
+.swiftpm/
