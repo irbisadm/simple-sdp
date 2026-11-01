@@ -15,10 +15,13 @@ plugins {
     kotlin("jvm") version "2.4.21"
     kotlin("plugin.serialization") version "2.4.21"
     `java-library`
+    `maven-publish`
 }
 
-group = "dev.irbisadm"
-version = "1.1.0"
+// JitPack (jitpack.yml) builds with its own coordinates: com.github.irbisadm:simple-sdp:<tag>
+group = findProperty("jitpackGroup")?.toString() ?: "dev.irbisadm"
+val libraryVersion = "1.2.0" // = package.json version (checked by scripts/sync-wasm.mjs)
+version = findProperty("jitpackVersion")?.toString() ?: libraryVersion
 
 kotlin {
     jvmToolchain(21)
@@ -31,6 +34,30 @@ kotlin {
 java {
     sourceCompatibility = JavaVersion.VERSION_11
     targetCompatibility = JavaVersion.VERSION_11
+    withSourcesJar()
+}
+
+publishing {
+    publications {
+        create<MavenPublication>("maven") {
+            artifactId = "simple-sdp"
+            from(components["java"])
+            pom {
+                name.set("simple-sdp")
+                description.set("Parse, write and validate SDP (RFC 8866) for WebRTC and SIP on Android and the JVM")
+                url.set("https://github.com/irbisadm/simple-sdp")
+                licenses {
+                    license {
+                        name.set("MIT")
+                        url.set("https://opensource.org/licenses/MIT")
+                    }
+                }
+                scm {
+                    url.set("https://github.com/irbisadm/simple-sdp")
+                }
+            }
+        }
+    }
 }
 
 // simple-sdp.wasm (built by `yarn asbuild` in the repository root) is compiled to JVM
@@ -68,6 +95,7 @@ sourceSets.main {
 tasks.named("compileJava") { dependsOn(compileWasm) }
 tasks.named("compileKotlin") { dependsOn(compileWasm) }
 tasks.named("processResources") { dependsOn(compileWasm) }
+tasks.named("sourcesJar") { dependsOn(compileWasm) }
 
 dependencies {
     api("org.jetbrains.kotlinx:kotlinx-serialization-json:1.12.0")
@@ -80,4 +108,5 @@ tasks.test {
     useJUnitPlatform()
     systemProperty("fixtures", rootDir.resolve("../../test/fixtures").absolutePath)
     systemProperty("wasm", wasmFile.absolutePath)
+    systemProperty("version", libraryVersion)
 }

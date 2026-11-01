@@ -8,6 +8,11 @@ code nor run-time code generation. Runtime dependencies: `chicory:runtime` and
 `kotlinx-serialization-json`.
 
 ```kotlin
+// settings.gradle.kts: dependencyResolutionManagement { repositories { maven("https://jitpack.io") } }
+implementation("com.github.irbisadm:simple-sdp:v1.2.0")
+```
+
+```kotlin
 val sdp = SimpleSdp()                       // load once, reuse; thread-safe
 
 val model = sdp.parse(offer)                // JsonObject, shape of the TypeScript `Sdp`

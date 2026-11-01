@@ -1,0 +1,39 @@
+name: Release
+
+# A pushed v* tag gets a GitHub Release with the WebAssembly module and the release notes
+# of CHANGELOG.md. (npm is published by hand: the account uses a one-time password.)
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: yarn
+      - run: yarn install --frozen-lockfile
+      - name: The tag matches package.json
+        run: test "$GITHUB_REF_NAME" = "v$(node -p 'require("./package.json").version')"
+      - name: Build the wasm module
+        run: yarn asbuild
+      - name: The committed platform copies are this build
+        run: git diff --exit-code -- platforms
+      - name: Release notes
+        run: |
+          awk -v v="${GITHUB_REF_NAME#v}" 'index($0, "## [" v "]") == 1 {f = 1; next} /^## \[/ {f = 0} f' CHANGELOG.md > notes.md
+          test -s notes.md
+      - name: Create the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cd wasm/build
+          sha256sum simple-sdp.wasm > SHA256SUMS
+          gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" --notes-file ../../notes.md \
+            simple-sdp.wasm SHA256SUMS
