@@ -22,7 +22,13 @@
       "types": "./types/index.d.ts",
       "import": "./dist/index.mjs",
       "default": "./dist/index.mjs"
-    }
+    },
+    "./wasm": {
+      "types": "./wasm/dist/index.d.ts",
+      "import": "./wasm/dist/index.mjs",
+      "default": "./wasm/dist/index.mjs"
+    },
+    "./wasm/simple-sdp.wasm": "./wasm/dist/simple-sdp.wasm"
   },
   "sideEffects": false,
   "keywords": [
@@ -37,11 +43,16 @@
     "typescript",
     "parser",
     "simulcast",
-    "ice"
+    "ice",
+    "wasm"
   ],
   "files": [
     "./dist/index.mjs",
     "./types/index.d.ts",
+    "./wasm/dist/index.mjs",
+    "./wasm/dist/index.d.ts",
+    "./wasm/dist/simple-sdp.mjs",
+    "./wasm/dist/simple-sdp.wasm",
     "./readme.md",
     "./CHANGELOG.md"
   ],
@@ -68,6 +79,7 @@
     "typecheck": "tsc --noEmit",
     "asbuild": "asc --config asconfig.json --target release && node scripts/sync-wasm.mjs",
     "asbuild:debug": "asc --config asconfig.json --target debug",
-    "test:wasm": "jest -c jest.wasm.config.js"
+    "test:wasm": "jest -c jest.wasm.config.js && node test-wasm/npm-entry.mjs",
+    "prepack": "yarn asbuild && yarn build"
   }
 }
