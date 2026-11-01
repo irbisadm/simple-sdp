@@ -51,6 +51,7 @@
     "@rollup/plugin-typescript": "^11.0.0",
     "@types/jest": "^29.5.0",
     "@types/node": "^18.14.0",
+    "assemblyscript": "0.28.20",
     "jest": "^29.5.0",
     "rollup": "^3.17.1",
     "rollup-plugin-dts": "^5.2.0",
@@ -64,6 +65,9 @@
   "scripts": {
     "build": "rollup -c",
     "test": "jest",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "asbuild": "asc --config asconfig.json --target release && node scripts/sync-wasm.mjs",
+    "asbuild:debug": "asc --config asconfig.json --target debug",
+    "test:wasm": "jest -c jest.wasm.config.js"
   }
 }

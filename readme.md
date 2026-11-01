@@ -186,6 +186,72 @@ Every fixture parses, round-trips through the writer and validates without issue
 
 Safari is not covered by fixtures yet.
 
+## WebAssembly, iOS and Android
+
+[`assembly/`](assembly) is a port of the library to [AssemblyScript](https://www.assemblyscript.org/).
+It compiles to a WebAssembly module (≈90 KB, ≈32 KB gzipped) with no imports, so the same
+parser, writer and validator run in any wasm runtime: browsers and Node.js, iOS through a
+wasm interpreter (no JIT, as the App Store requires), Android and the JVM as bytecode
+compiled from the module at build time.
+
+The port behaves exactly like the TypeScript code. `yarn test:wasm` runs the test suites of
+this package against the wasm build, plus a differential test that compares both
+implementations on all fixtures and on thousands of mutations of them: same model, same
+written text, same issues, same error messages.
+
+| Platform | Package | Runtime |
+|---|---|---|
+| iOS 18+, macOS 15+ | Swift package `SimpleSdp` ([`Package.swift`](Package.swift), [`platforms/apple`](platforms/apple)) | [WasmKit](https://github.com/swiftwasm/WasmKit) interpreter |
+| Android, JVM 11+ | Kotlin library `dev.irbisadm:simple-sdp` ([`platforms/kotlin`](platforms/kotlin)) | [Chicory](https://chicory.dev), compiled to bytecode at build time |
+| Browser, Node.js, other wasm hosts | `wasm/build/simple-sdp.wasm` (`yarn asbuild`) | any |
+
+The model crosses the wasm boundary as JSON with the shape of the TypeScript `Sdp` interface.
+
+```swift
+let sdp = try SimpleSdp()
+let json = try sdp.parseJSON(offer)                  // Data: the model, key order kept
+let issues = try sdp.validate(json: json, type: .offer)
+let text = try sdp.write(json: json)
+let model = try sdp.parse(offer)                     // [String: Any] (does not keep key order)
+```
+
+```kotlin
+val sdp = SimpleSdp()
+val model = sdp.parse(offer)                         // kotlinx.serialization JsonObject
+val issues = sdp.validate(model, SdpType.OFFER)
+val text = sdp.write(model)
+```
+
+### Module interface
+
+The module exports a C-style interface on UTF-8 buffers for hosts without AssemblyScript
+bindings:
+
+| Export | |
+|---|---|
+| `sdp_alloc(len) → ptr` | allocate an input buffer; write the UTF-8 bytes at `ptr` |
+| `sdp_parse(ptr, len) → res` | `{"sdp": model}` or `{"error": {message, reason, lineNumber, line}}` |
+| `sdp_write(ptr, len) → res` | model JSON in; `{"sdp": "text"}` or `{"error": {message}}` |
+| `sdp_validate(ptr, len, type) → res` | SDP text in, `type` 0 = none, 1 = offer, 2 = answer; `{"issues": [...]}` |
+| `sdp_validate_model(ptr, len, type) → res` | model JSON in; `{"issues": [...]}` or `{"error": {message}}` |
+| `sdp_version() → res` | version string |
+| `sdp_len(res) → len` | byte length of a buffer |
+| `sdp_free(ptr)` | release an input buffer or a result |
+
+A module instance is single-threaded; the Swift and Kotlin wrappers serialize calls.
+The module uses the minimal AssemblyScript runtime: memory is reclaimed at the end of every
+call, so a result stays valid until the next call on the same instance.
+
+Approximate time to parse / write an 18 KB Chrome offer on x86-64, JSON transfer included:
+wasm in Node.js 1.3 / 1.2 ms (the TypeScript build: 0.35 / 0.25 ms), JVM with the compiled
+module 6 / 9 ms, WasmKit (release build) ≈10 ms each.
+
+JavaScript hosts can use the generated ESM bindings (`wasm/build/simple-sdp.js`) with
+string arguments: `parse(text)`, `write(json)`, `validate(text, type)`, `validateModel(json, type)`.
+
+Build: `yarn asbuild` compiles the module and copies it into `platforms/` (the copies are
+committed so that SwiftPM and Gradle builds do not need Node.js).
+
 ## License
 
 MIT
