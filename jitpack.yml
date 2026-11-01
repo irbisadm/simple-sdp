@@ -1,0 +1,6 @@
+# JitPack: com.github.irbisadm:simple-sdp:<tag> — the Kotlin library of platforms/kotlin.
+# JitPack provides GROUP and VERSION; the artifacts are installed into ~/.m2.
+jdk:
+  - openjdk21
+install:
+  - cd platforms/kotlin && ./gradlew publishToMavenLocal -x test -PjitpackGroup=$GROUP -PjitpackVersion=$VERSION
