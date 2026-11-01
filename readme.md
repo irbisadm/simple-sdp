@@ -7,14 +7,17 @@
 
 # simple-sdp
 
-A strict, typed parser for the Session Description Protocol
-([RFC 8866](https://www.rfc-editor.org/rfc/rfc8866)), for WebRTC and SIP.
+Parse, modify, write and validate Session Description Protocol
+([RFC 8866](https://www.rfc-editor.org/rfc/rfc8866)) messages for WebRTC and SIP.
 TypeScript, no runtime dependencies, works in Node.js and browsers.
 
-- **Strict**: line order and mandatory lines are checked against RFC 8866 §5. Every
-  error is an `SdpParseError` with a line number.
-- **Lossless**: each line maps to a typed field or, for attributes the library does not
-  interpret, to an ordered `attributes` entry with the exact original value.
+- **`sdpReader.parse`**: strict. Line order and mandatory lines are checked against
+  RFC 8866 §5. Every error is an `SdpParseError` with a line number.
+- **Lossless model**: each line maps to a typed field or, for attributes the library
+  does not interpret, to an ordered `attributes` entry with the exact original value.
+- **`sdpWriter.write`**: serializes the model back to RFC 8866 text (CRLF).
+  `write(parse(x))` keeps every line of `x` (see [Writing](#writing)).
+- **`sdpValidator.validate`**: reports RFC and WebRTC rule violations as a list of issues.
 - **Typed WebRTC attributes**: ICE, DTLS, BUNDLE, codecs, simulcast, SSRCs (see below).
 
 ```sh
@@ -22,6 +25,29 @@ npm install @irbisadm/simple-sdp
 ```
 
 ## Usage
+
+### Parse → modify → write
+
+```ts
+import {sdpReader, sdpWriter, sdpValidator} from '@irbisadm/simple-sdp';
+
+const sdp = sdpReader.parse(offer.sdp);
+
+// Keep only Opus and ask for stereo
+for (const m of sdp.media.filter(m => m.type === 'audio')) {
+  m.codecs = m.codecs?.filter(c => c.encodingName === 'opus');
+  m.codecs?.forEach(c => c.parameters = {...c.parameters, stereo: '1'});
+}
+sdp.origin.sessVersion = String(BigInt(sdp.origin.sessVersion) + 1n);
+
+sdpValidator.validate(sdp, {type: 'offer'}); // [] — no issues
+await pc.setLocalDescription({type: 'offer', sdp: sdpWriter.write(sdp)});
+```
+
+The `m=` payload type list is derived from `codecs`, so removing a codec also removes
+its `rtpmap`, `fmtp` and `rtcp-fb` lines.
+
+### Read
 
 ```ts
 import {sdpReader, SdpParseError} from '@irbisadm/simple-sdp';
@@ -78,6 +104,54 @@ Other attributes go to `attributes: {name, value?}[]` in their original order.
 So do known attributes outside their scope (e.g. `a=mid` at session level) and
 `rtpmap`/`fmtp`/`rtcp-fb` for a payload type that is not in the `m=` line.
 
+## Writing
+
+`sdpWriter.write(sdp)` emits lines in RFC 8866 §5 order, each terminated by CRLF.
+It throws if `origin` or `timing` is missing, or if a media section has neither `codecs`
+nor `formats`.
+
+The output carries the same lines as the input, but the order of attributes inside a
+section is normalized. Session level: `group`, `ice-lite`, ICE, DTLS, `extmap`, direction,
+`end-of-candidates`, then generic attributes. Media level: `rtcp`, ICE, DTLS, `mid`,
+`extmap`, direction, `msid`, `rtcp-mux`, `rtcp-rsize`, per codec `rtpmap` → `rtcp-fb` → `fmtp`,
+`sctp-port`, `max-message-size`, `rid`, `simulcast`, `ssrc-group`, `ssrc`, `candidate`,
+`end-of-candidates`, then generic attributes in their original order.
+Other normalizations:
+
+- `r=`/`z=` times are written in seconds (`7d` → `604800`);
+- whitespace around `;` in `a=fmtp` is dropped;
+- `a=ssrc` lines are grouped by SSRC; `a=simulcast` lists `send` before `recv`.
+
+The round-trip test checks every fixture: the lines of each section are the same as in
+the input, non-attribute lines keep their order, and `parse(write(parse(x)))` deep-equals
+`parse(x)`.
+
+## Validation
+
+`sdpValidator.validate(sdp | text, {type?: 'offer' | 'answer'})` returns
+`SdpIssue[]` (`{severity, code, message, mediaIndex?, lineNumber?}`). Text is parsed first.
+A parse failure is reported as one `parse-error` issue, so the RFC 8866 §5 order rules
+are covered as well.
+
+| Code | Severity | Rule |
+|---|---|---|
+| `parse-error` | error | `sdpReader.parse` failed |
+| `invalid-version`, `missing-origin`, `missing-session-name`, `missing-timing` | error | mandatory `v=`/`o=`/`s=`/`t=` (for hand-built objects) |
+| `empty-session-name` | warning | `s=` must not be empty (RFC 8866 §5.3) |
+| `missing-connection` | error | `c=` at session level or in every media description (RFC 8866 §5.7) |
+| `duplicate-mid`, `group-unknown-mid`, `bundle-missing-mid` | error | unique `mid`s; group members exist; every media has `mid` with BUNDLE (RFC 5888, RFC 9143) |
+| `missing-rtpmap` | error | payload types above 34 need `a=rtpmap` (RFC 8866 §6.6, RFC 3551) |
+| `unknown-payload-type` | warning | `rtpmap`/`fmtp`/`rtcp-fb` for a payload type not in `m=` |
+| `missing-fingerprint`, `missing-setup` | error | DTLS transports (`UDP/TLS/RTP/SAVPF`, `UDP/DTLS/SCTP`, …) (RFC 8842 §5.2, §5.3) |
+| `setup-actpass-in-answer` | error | with `type: 'answer'` (RFC 5763 §5) |
+| `missing-ice-ufrag`, `missing-ice-pwd` | error | if ICE is used, every active media has credentials (RFC 8839 §5.4) |
+| `ice-ufrag-length`, `ice-pwd-length` | error | 4–256 / 22–256 characters (RFC 8839 §5.4) |
+| `extmap-invalid-id`, `extmap-duplicate-id` | error | ids 1–14 or 16–255, unique per section (RFC 8285) |
+| `simulcast-unknown-rid`, `rid-unknown-payload-type` | error | `a=simulcast` rids exist with the same direction; `pt=` values are in `m=` (RFC 8851, RFC 8853) |
+| `ssrc-group-unknown-ssrc` | warning | `a=ssrc-group` members have `a=ssrc` lines (RFC 5576) |
+
+Media sections with port 0 (rejected or bundle-only) are skipped by the ICE and DTLS checks.
+
 ## Parsing rules
 
 `sdpReader.parse` throws `SdpParseError` when:
@@ -97,7 +171,8 @@ is rejected.
 
 ## Compatibility
 
-Tested on real session descriptions (see [`test/fixtures`](test/fixtures/README.md)):
+Tested on real session descriptions (see [`test/fixtures`](test/fixtures/README.md)).
+Every fixture parses, round-trips through the writer and validates without issues:
 
 | Source | Fixtures |
 |---|---|
