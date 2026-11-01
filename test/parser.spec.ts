@@ -254,3 +254,25 @@ describe('flags and transport attributes', () => {
     expect(() => sdpReader.parse(head + 'a=rtcp:9 IN IP4\r\n')).toThrow('a=rtcp');
   });
 });
+
+describe('names of Object.prototype members are ordinary names', () => {
+  const head = 'v=0\r\no=- 1 1 IN IP4 h\r\ns=-\r\nt=0 0\r\n';
+
+  test('unknown attributes', () => {
+    const sdp = sdpReader.parse(head + 'a=constructor\r\na=toString:x\r\na=__proto__\r\na=hasOwnProperty:y\r\n');
+    expect(sdp.attributes).toEqual([
+      {name: 'constructor'}, {name: 'toString', value: 'x'}, {name: '__proto__'}, {name: 'hasOwnProperty', value: 'y'},
+    ]);
+  });
+
+  test('record keys: fmtp parameters, ssrc attributes, candidate extensions', () => {
+    const [m] = sdpReader.parse(head + [
+      'm=audio 9 RTP/AVP 96', 'c=IN IP4 0.0.0.0', 'a=rtpmap:96 opus/48000/2', 'a=fmtp:96 __proto__=1;constructor',
+      'a=ssrc:1 constructor:x', 'a=ssrc:1 __proto__:y', 'a=candidate:1 1 UDP 1 h 9 typ host __proto__ z',
+    ].join('\r\n') + '\r\n').media;
+    expect(Object.entries(m.codecs![0].parameters!)).toEqual([['__proto__', '1'], ['constructor', null]]);
+    expect(Object.entries(m.ssrcs![0].attributes)).toEqual([['constructor', 'x'], ['__proto__', 'y']]);
+    expect(Object.entries(m.candidates![0].extensions!)).toEqual([['__proto__', 'z']]);
+    expect(m.attributes).toBeUndefined();
+  });
+});

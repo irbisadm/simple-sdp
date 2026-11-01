@@ -130,3 +130,8 @@ describe('sdpValidator.validate', () => {
     expect(codes(sdp)).toEqual(['group-unknown-mid', 'bundle-missing-mid']);
   });
 });
+
+test('fingerprint with a hash name of an Object.prototype member is an unknown hash', () => {
+  const media = WEBRTC_AUDIO.map(l => l.startsWith('a=fingerprint') ? 'a=fingerprint:constructor AA:BB' : l);
+  expect(codes(lines(...HEAD, ...media))).toEqual([]);
+});
