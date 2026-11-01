@@ -3,6 +3,24 @@
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). The project
 follows [Semantic Versioning](https://semver.org/).
 
+## [1.1.0] — 2026-11-01
+
+### Added
+- AssemblyScript port (`assembly/`): the parser, writer and validator compiled to a
+  WebAssembly module with no imports (`yarn asbuild`). Results are JSON with the shape of
+  the TypeScript model; a C-style interface on UTF-8 buffers (`sdp_parse`, `sdp_write`,
+  `sdp_validate`, `sdp_validate_model`, …) serves non-JS hosts. `yarn test:wasm` runs the
+  test suites against the module, plus a differential test against the TypeScript code.
+- Swift package `SimpleSdp` for iOS 18+ / macOS 15+ (WasmKit), `Package.swift` in the root.
+- Kotlin library `dev.irbisadm:simple-sdp` for Android and the JVM (Chicory; the module is
+  compiled to bytecode at build time), `platforms/kotlin`.
+
+### Fixed
+- Attributes named like `Object.prototype` members (`a=constructor`, `a=toString`,
+  `a=__proto__`, …) failed to parse; an ssrc attribute with such a name was dropped, a
+  `__proto__` key of fmtp/ssrc/candidate records changed the object prototype, and
+  `a=fingerprint:constructor …` got a validator message with "function Object()".
+
 ## [1.0.1] — 2026-11-01
 
 ### Fixed

@@ -1,6 +1,6 @@
 import {SdpMediaSection, SdpMsid, SdpSsrcGroup} from "../../../../interfaces/Sdp";
 import {stringToIntParser} from "../string-to-int.parser";
-import {splitFirst} from "./helpers";
+import {own, setOwn, splitFirst} from "./helpers";
 
 const ssrcId = (value: string): number => {
   const id = stringToIntParser(value, 'ssrc-id');
@@ -29,10 +29,10 @@ export const ssrcParser = (section: SdpMediaSection, value: string): boolean => 
     ssrc = {id, attributes: {}};
     ssrcs.push(ssrc);
   }
-  if (name in ssrc.attributes) {
+  if (own(ssrc.attributes, name) !== undefined) {
     return false;
   }
-  ssrc.attributes[name] = val;
+  setOwn(ssrc.attributes, name, val);
   return true;
 }
 

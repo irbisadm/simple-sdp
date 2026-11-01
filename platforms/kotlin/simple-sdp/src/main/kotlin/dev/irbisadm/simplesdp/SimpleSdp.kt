@@ -1,0 +1,189 @@
+package dev.irbisadm.simplesdp
+
+import com.dylibso.chicory.runtime.ExportFunction
+import com.dylibso.chicory.runtime.Instance
+import com.dylibso.chicory.runtime.Machine
+import com.dylibso.chicory.wasm.ChicoryException
+import com.dylibso.chicory.wasm.Parser
+import com.dylibso.chicory.wasm.WasmModule
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.decodeFromJsonElement
+import kotlinx.serialization.json.int
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
+import dev.irbisadm.simplesdp.internal.SimpleSdpModule
+
+/** Offer/answer specific validation rules, e.g. `a=setup:actpass` is not allowed in an answer */
+enum class SdpType(internal val code: Long) { OFFER(1), ANSWER(2) }
+
+/**
+ * The session description violates RFC 8866: a malformed or unknown line, wrong line order,
+ * a missing mandatory line or a malformed typed attribute.
+ */
+class SdpParseException(
+    /** The error description without the line reference */
+    val reason: String,
+    /** 1-based line number, or 0 when the error is not tied to a line */
+    val lineNumber: Int,
+    /** The offending line, without the line terminator */
+    val line: String,
+    message: String,
+) : Exception(message)
+
+/** The model cannot be written or validated: invalid JSON, a field of the wrong type, missing `o=`/`t=`, … */
+class SdpModelException(message: String) : IllegalArgumentException(message)
+
+/** A rule violation reported by [SimpleSdp.validate] */
+@Serializable
+data class SdpIssue(
+    /** `error` or `warning` */
+    val severity: String,
+    /** e.g. `missing-fingerprint`; the codes are listed in the README */
+    val code: String,
+    val message: String,
+    /** Index in `media`, if the issue belongs to a media section */
+    val mediaIndex: Int? = null,
+    /** For `parse-error`: the line number reported by the parser */
+    val lineNumber: Int? = null,
+)
+
+/**
+ * simple-sdp: parse, write and validate SDP (RFC 8866).
+ *
+ * Runs the WebAssembly build of the library (the AssemblyScript port of the TypeScript
+ * package) with Chicory. The module is compiled to JVM bytecode when this library is built,
+ * so it works on the JVM and on Android without native code or run-time code generation.
+ * The model is the JSON form of the TypeScript `Sdp` interface.
+ *
+ * An instance is thread-safe (calls are serialized). Create one and reuse it: loading the
+ * module takes a few milliseconds.
+ */
+class SimpleSdp private constructor(
+    private val module: WasmModule,
+    private val machineFactory: ((Instance) -> Machine)?,
+) {
+    /** Uses the module bundled with the library, compiled to bytecode */
+    constructor() : this(SimpleSdpModule.load(), SimpleSdpModule::create)
+
+    /** Runs another build of the module (e.g. a debug build) on the Chicory interpreter */
+    constructor(wasm: ByteArray) : this(Parser.parse(wasm), null)
+
+    private class Runtime(module: WasmModule, machineFactory: ((Instance) -> Machine)?) {
+        val instance: Instance = Instance.builder(module)
+            .apply { if (machineFactory != null) withMachineFactory(machineFactory) }
+            .build()
+        val alloc: ExportFunction = instance.export("sdp_alloc")
+        val free: ExportFunction = instance.export("sdp_free")
+        val len: ExportFunction = instance.export("sdp_len")
+        val parse: ExportFunction = instance.export("sdp_parse")
+        val write: ExportFunction = instance.export("sdp_write")
+        val validate: ExportFunction = instance.export("sdp_validate")
+        val validateModel: ExportFunction = instance.export("sdp_validate_model")
+        val version: ExportFunction = instance.export("sdp_version")
+    }
+
+    private var runtime: Runtime? = null
+
+    /** Calls `fn(ptr, len, *extra)` with UTF-8 input and returns the UTF-8 result */
+    @Synchronized
+    private fun call(select: (Runtime) -> ExportFunction, input: String?, vararg extra: Long): String {
+        val rt = runtime ?: Runtime(module, machineFactory).also { runtime = it }
+        try {
+            val memory = rt.instance.memory()
+            val args = if (input == null) {
+                longArrayOf()
+            } else {
+                val bytes = input.toByteArray(Charsets.UTF_8)
+                val ptr = rt.alloc.apply(bytes.size.toLong())[0]
+                memory.write(ptr.toInt(), bytes)
+                longArrayOf(ptr, bytes.size.toLong(), *extra)
+            }
+            val res = select(rt).apply(*args)[0]
+            if (input != null) {
+                rt.free.apply(args[0])
+            }
+            val size = rt.len.apply(res)[0].toInt()
+            val out = memory.readBytes(res.toInt(), size)
+            rt.free.apply(res)
+            return out.toString(Charsets.UTF_8)
+        } catch (e: ChicoryException) {
+            // A trap leaves the instance in an unknown state: start over on the next call
+            runtime = null
+            throw IllegalStateException("simple-sdp wasm trapped", e)
+        }
+    }
+
+    private fun envelope(json: String): JsonObject {
+        val result = Json.parseToJsonElement(json).jsonObject
+        val error = result["error"]?.jsonObject ?: return result
+        val message = error["message"]!!.jsonPrimitive.content
+        val reason = error["reason"]
+        if (reason != null) {
+            throw SdpParseException(
+                reason.jsonPrimitive.content,
+                error["lineNumber"]!!.jsonPrimitive.int,
+                error["line"]!!.jsonPrimitive.content,
+                message,
+            )
+        }
+        throw SdpModelException(message)
+    }
+
+    /**
+     * Parses a session description into its model (the JSON form of the TypeScript `Sdp`).
+     * Lines may be terminated by CRLF or LF.
+     *
+     * @throws SdpParseException if the description violates RFC 8866
+     */
+    fun parse(sdp: String): JsonObject = envelope(call({ it.parse }, sdp))["sdp"]!!.jsonObject
+
+    /** [parse] returning the model as a JSON string */
+    fun parseToJson(sdp: String): String = parse(sdp).toString()
+
+    /** True if [parse] accepts the description */
+    fun isValid(sdp: String): Boolean = try {
+        parse(sdp)
+        true
+    } catch (e: SdpParseException) {
+        false
+    }
+
+    /**
+     * Serializes a model: RFC 8866 line order, CRLF line endings.
+     *
+     * @throws SdpModelException if the model is invalid or lacks `origin`/`timing`
+     */
+    fun write(model: JsonObject): String = write(model.toString())
+
+    /** [write] for a model given as a JSON string */
+    fun write(modelJson: String): String =
+        envelope(call({ it.write }, modelJson))["sdp"]!!.jsonPrimitive.content
+
+    /**
+     * Checks a session description against RFC 8866 and the WebRTC SDP rules. A parse
+     * failure is reported as a single `parse-error` issue.
+     */
+    fun validate(sdp: String, type: SdpType? = null): List<SdpIssue> =
+        issues(call({ it.validate }, sdp, type?.code ?: 0))
+
+    /**
+     * Checks a model, e.g. after modifying it.
+     *
+     * @throws SdpModelException if the model is not valid JSON or a field has the wrong type
+     */
+    fun validate(model: JsonObject, type: SdpType? = null): List<SdpIssue> = validateModel(model.toString(), type)
+
+    /** [validate] for a model given as a JSON string */
+    fun validateModel(modelJson: String, type: SdpType? = null): List<SdpIssue> =
+        issues(call({ it.validateModel }, modelJson, type?.code ?: 0))
+
+    private fun issues(json: String): List<SdpIssue> =
+        envelope(json)["issues"]!!.jsonArray.map { Json.decodeFromJsonElement<SdpIssue>(it) }
+
+    /** Version of the wasm module */
+    val version: String by lazy { call({ it.version }, null) }
+
+}

@@ -1,5 +1,6 @@
 import {SdpCandidate} from "../../../../interfaces/Sdp";
 import {stringToIntParser} from "../string-to-int.parser";
+import {setOwn} from "./helpers";
 
 const SYNTAX = '"<foundation> <component> <transport> <priority> <address> <port> typ <type> [raddr <addr>] [rport <port>] *(<ext-name> <ext-value>)"';
 
@@ -35,7 +36,7 @@ export const candidateParser = (value: string): SdpCandidate => {
         candidate.tcpType = val;
         break;
       default:
-        (candidate.extensions ??= {})[name] = val;
+        setOwn(candidate.extensions ??= {}, name, val);
     }
   }
   return candidate;

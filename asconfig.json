@@ -1,0 +1,28 @@
+{
+  "entries": [
+    "assembly/index.ts"
+  ],
+  "targets": {
+    "debug": {
+      "outFile": "wasm/build/simple-sdp.debug.wasm",
+      "textFile": "wasm/build/simple-sdp.debug.wat",
+      "sourceMap": true,
+      "debug": true
+    },
+    "release": {
+      "outFile": "wasm/build/simple-sdp.wasm",
+      "optimizeLevel": 3,
+      "shrinkLevel": 0,
+      "converge": true,
+      "noAssert": false
+    }
+  },
+  "options": {
+    "bindings": "esm",
+    "exportRuntime": true,
+    "use": [
+      "abort=assembly/util/abortStub"
+    ],
+    "runtime": "minimal"
+  }
+}
