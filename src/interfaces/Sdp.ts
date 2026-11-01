@@ -85,6 +85,38 @@ interface SdpMsid {
   trackId?: string;
 }
 
+/** `a=rid:<rid-id> <send|recv> [pt=<fmt>,...;][<restriction>;...]` — RFC 8851 §10 */
+interface SdpRid {
+  id: string;
+  direction: 'send' | 'recv';
+  /** `pt=` list */
+  payloadTypes?: number[];
+  /**
+   * Restrictions in their original order, e.g. `max-width`, `max-fps`, `depend`.
+   * A restriction without `=` maps to null.
+   */
+  restrictions?: Record<string, string | null>;
+}
+
+/** One rid of an `a=simulcast` stream — RFC 8853 §5.1 */
+interface SdpSimulcastRid {
+  rid: string;
+  /** Prefixed with `~`: initially paused (RFC 7728) */
+  paused?: boolean;
+}
+
+/**
+ * Simulcast streams of one direction. Every element is one simulcast stream (`;`-separated),
+ * listing its alternative rids (`,`-separated).
+ */
+type SdpSimulcastStreams = SdpSimulcastRid[][];
+
+/** `a=simulcast` — RFC 8853 §5.1 */
+interface SdpSimulcast {
+  send?: SdpSimulcastStreams;
+  recv?: SdpSimulcastStreams;
+}
+
 /** Attributes allowed both at session level and at media level */
 interface SdpCommonAttributes {
   /** RFC 8866 §6.7. At session level it is the default for all media sections. */
@@ -228,6 +260,10 @@ interface SdpMediaSection extends SdpCommonAttributes {
   ssrcs?: SdpSsrc[];
   /** `a=ssrc-group` — RFC 5576 */
   ssrcGroups?: SdpSsrcGroup[];
+  /** `a=rid` — RFC 8851 */
+  rids?: SdpRid[];
+  /** `a=simulcast` — RFC 8853 */
+  simulcast?: SdpSimulcast;
 }
 
 interface Sdp extends SdpCommonAttributes {
@@ -271,6 +307,10 @@ export {
   SdpMsid,
   SdpSsrc,
   SdpSsrcGroup,
+  SdpRid,
+  SdpSimulcast,
+  SdpSimulcastRid,
+  SdpSimulcastStreams,
   SdpExtmap,
   SdpOrigin,
   SdpTiming,

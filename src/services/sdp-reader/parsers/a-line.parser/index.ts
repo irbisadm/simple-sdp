@@ -5,6 +5,7 @@ import {rtpmapParser} from "./rtpmap.parser";
 import {fmtpParametersParser} from "./fmtp.parser";
 import {candidateParser} from "./candidate.parser";
 import {msidParser, ssrcGroupParser, ssrcParser} from "./ssrc.parser";
+import {ridParser, simulcastParser} from "./simulcast.parser";
 import {findCodec, flag, once, push, required, splitFirst} from "./helpers";
 
 type Scope = 'session' | 'media';
@@ -103,6 +104,14 @@ const handlers: Record<string, AttributeHandler> = {
   'ssrc-group': {
     scopes: MEDIA,
     parse: (section: SdpMediaSection, value) => push(section, 'ssrcGroups', ssrcGroupParser(required(value, 'a=ssrc-group:<semantics> <ssrc-id> ...'))),
+  },
+  'rid': {
+    scopes: MEDIA,
+    parse: (section: SdpMediaSection, value) => push(section, 'rids', ridParser(required(value, 'a=rid:<rid-id> <send|recv>'))),
+  },
+  'simulcast': {
+    scopes: MEDIA,
+    parse: (section: SdpMediaSection, value) => once(section, 'simulcast', simulcastParser(required(value, 'a=simulcast:<send|recv> <streams>')), 'simulcast'),
   },
   'rtpmap': {
     scopes: MEDIA,

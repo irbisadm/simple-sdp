@@ -214,3 +214,16 @@ describe('msid / ssrc in fixtures', () => {
     expect(video.ssrcGroups).toEqual([{semantics: 'FID', ssrcs: [3480968750, 641745922]}]);
   });
 });
+
+describe('simulcast in fixtures', () => {
+  test.each(['chrome-simulcast-offer', 'firefox-simulcast-offer'])('%s', (name) => {
+    const video = parseFixture(name).media.find(m => m.type === 'video')!;
+    expect(video.direction).toBe('sendonly');
+    expect(video.rids).toEqual([
+      {id: 'q', direction: 'send'},
+      {id: 'h', direction: 'send'},
+      {id: 'f', direction: 'send'},
+    ]);
+    expect(video.simulcast).toEqual({send: [[{rid: 'q'}], [{rid: 'h'}], [{rid: 'f'}]]});
+  });
+});
