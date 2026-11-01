@@ -1,14 +1,14 @@
 import {SdpTiming} from "../../../interfaces/Sdp";
-import {linePartsParser} from "./line-parts.parser";
+import {stringToIntParser} from "./string-to-int.parser";
 
-export const tLineParser = (line:string):SdpTiming=>{
-  const timingParts = linePartsParser(line,'t');
-  const startTimeInt = parseInt(timingParts[0]);
-  const startTime = isNaN(startTimeInt)?0:startTimeInt;
-  const stopTimeInt = parseInt(timingParts[1]);
-  const stopTime = isNaN(stopTimeInt)?0:stopTimeInt;
+/** `t=<start-time> <stop-time>` — RFC 8866 §5.9 */
+export const tLineParser = (value: string): SdpTiming => {
+  const parts = value.split(' ');
+  if (parts.length !== 2) {
+    throw new Error('expected "<start-time> <stop-time>"');
+  }
   return {
-    startTime,
-    stopTime
+    startTime: stringToIntParser(parts[0], 'start time'),
+    stopTime: stringToIntParser(parts[1], 'stop time'),
   }
 }

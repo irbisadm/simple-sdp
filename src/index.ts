@@ -1,6 +1,8 @@
 import {sdpReader} from './services/sdp-reader';
-import {Sdp, SdpMediaSection, SdpPair, SdpOrigin, SdpTiming, SdpRepeatTimes, SdpEncryptionKey} from "./interfaces/Sdp";
+import {SdpParseError} from './errors';
+
+export * from './interfaces/Sdp';
 
 const version = '__lib_version__'; // Version will be injected on the build
 
-export {version, sdpReader, Sdp, SdpMediaSection, SdpPair, SdpOrigin, SdpTiming, SdpRepeatTimes, SdpEncryptionKey}
+export {version, sdpReader, SdpParseError}

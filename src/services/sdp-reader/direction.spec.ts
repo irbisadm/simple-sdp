@@ -18,11 +18,11 @@ describe('media direction (RFC 8866 §6.7)', () => {
   test.each(DIRECTIONS)('session-level a=%s', (direction) => {
     const sdp = sdpReader.parse(sdpWith(direction, 'sendrecv'));
     expect(sdp.direction).toBe(direction);
-    expect(sdp.attributes?.[direction]).toBeUndefined();
+    expect(sdp.attributes).toBeUndefined();
   });
   test.each(DIRECTIONS)('media-level a=%s', (direction) => {
     const sdp = sdpReader.parse(sdpWith('sendrecv', direction));
     expect(sdp.media?.[0].direction).toBe(direction);
-    expect(sdp.media?.[0].attributes?.[direction]).toBeUndefined();
+    expect(sdp.media[0].attributes).toBeUndefined();
   });
 });

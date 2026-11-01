@@ -1,57 +1,38 @@
-import {SdpAppMediaSection, SdpAVMediaSection, SdpMediaSection, SdpOtherMediaSection} from "../../../interfaces/Sdp";
-import {linePartsParser} from "./line-parts.parser";
+import {SdpMediaSection} from "../../../interfaces/Sdp";
+import {stringToIntParser} from "./string-to-int.parser";
 
-const parsePorts = (ports: string): number[] => {
-  return ports.split('/').map(str => parseInt(str));
-}
+/** True for RTP-based protocols: RTP/AVP, RTP/SAVPF, UDP/TLS/RTP/SAVPF, TCP/RTP/AVP, … */
+export const isRtpProto = (proto: string): boolean => /(^|\/)RTP\//.test(proto);
 
-const avLineParser = (mediaParts: string[]): SdpAVMediaSection => {
-  const section: SdpAVMediaSection = {
-    type: mediaParts[0] as 'audio' | 'video',
-    ports: parsePorts(mediaParts[1]),
-    proto: mediaParts[2],
+/** `m=<media> <port>[/<number of ports>] <proto> <fmt> ...` — RFC 8866 §5.14 */
+export const mLineParser = (value: string): SdpMediaSection => {
+  const parts = value.split(' ');
+  if (parts.length < 4) {
+    throw new Error('expected "<media> <port> <proto> <fmt> ..."');
   }
-  if (mediaParts.length > 3) {
-    section.fmt = [];
-    for (let i = 3; i < mediaParts.length; i++) {
-      section.fmt.push({ payloadType: parseInt(mediaParts[i])});
-    }
+  const [type, portPart, proto, ...fmt] = parts;
+  const [port, numberOfPorts, ...extra] = portPart.split('/');
+  if (extra.length) {
+    throw new Error(`invalid port "${portPart}"`);
+  }
+  const section: SdpMediaSection = {
+    type,
+    port: stringToIntParser(port, 'port'),
+    proto,
+  };
+  if (numberOfPorts !== undefined) {
+    section.numberOfPorts = stringToIntParser(numberOfPorts, 'number of ports');
+  }
+  if (isRtpProto(proto)) {
+    section.codecs = fmt.map(pt => {
+      const payloadType = stringToIntParser(pt, 'payload type');
+      if (payloadType > 127) {
+        throw new Error(`payload type ${payloadType} is out of range 0-127`);
+      }
+      return {payloadType};
+    });
+  } else {
+    section.formats = fmt;
   }
   return section;
-}
-const appLineParser = (mediaParts: string[]): SdpAppMediaSection => {
-  return {
-    type: 'application',
-    ports: parsePorts(mediaParts[1]),
-    proto: mediaParts[2],
-    description: mediaParts[3]
-  } as SdpAppMediaSection;
-}
-const unknownLineParser = (mediaParts: string[]): SdpOtherMediaSection => {
-  const section: SdpOtherMediaSection = {
-    type: mediaParts[0],
-    ports: parsePorts(mediaParts[1]),
-    proto: mediaParts[2],
-  }
-  if (mediaParts.length > 3) {
-    section.fmtp = [];
-    for (let i = 3; i < mediaParts.length; i++) {
-      section.fmtp.push(mediaParts[i]);
-    }
-  }
-  return section;
-}
-
-export const mLineParser = (line: string): SdpMediaSection => {
-  const mediaParts = linePartsParser(line, 'm');
-  switch (mediaParts[0]) {
-    case 'audio':
-      return avLineParser(mediaParts);
-    case 'video':
-      return avLineParser(mediaParts);
-    case 'application':
-      return appLineParser(mediaParts);
-    default:
-      return unknownLineParser(mediaParts);
-  }
 }

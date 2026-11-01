@@ -1,18 +1,12 @@
 import {SdpRepeatTimes} from "../../../interfaces/Sdp";
-import {linePartsParser} from "./line-parts.parser";
 import {lineTimeParser} from "./line-time.parser";
 
-export const rLineParser = (line: string): SdpRepeatTimes => {
-  const repeatParts = linePartsParser(line, 'r');
-  if (repeatParts.length < 2) {
-    throw new Error(`Invalid repeat line "${line}": expected "r=<repeat interval> <active duration> <offsets>"`);
+/** `r=<repeat interval> <active duration> <offsets from start-time>` — RFC 8866 §5.10 */
+export const rLineParser = (value: string): SdpRepeatTimes => {
+  const parts = value.split(' ');
+  if (parts.length < 3) {
+    throw new Error('expected "<repeat interval> <active duration> <offset>..."');
   }
-  const sdpRepeatTimes: SdpRepeatTimes = {
-    repeatInterval: lineTimeParser(repeatParts[0]),
-    activeDuration: lineTimeParser(repeatParts[1]),
-  }
-  if (repeatParts.length > 2) {
-    sdpRepeatTimes.offsets = repeatParts.slice(2).map(lineTimeParser);
-  }
-  return sdpRepeatTimes;
+  const [interval, duration, ...offsets] = parts.map(part => lineTimeParser(part));
+  return {repeatInterval: interval, activeDuration: duration, offsets};
 }
