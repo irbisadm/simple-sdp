@@ -1,4 +1,4 @@
-import {Sdp, SdpMediaSection} from "../../interfaces/Sdp";
+import {Sdp, SdpCommonAttributes, SdpMediaSection} from "../../interfaces/Sdp";
 import {SdpParseError} from "../../errors";
 import {sdpReader} from "../sdp-reader";
 import {isRtpProto} from "../sdp-reader/parsers/m-line.parser";
@@ -17,6 +17,8 @@ type SdpIssueCode =
   | 'missing-rtpmap'
   | 'unknown-payload-type'
   | 'missing-fingerprint'
+  | 'invalid-fingerprint'
+  | 'fingerprint-not-uppercase'
   | 'missing-setup'
   | 'setup-actpass-in-answer'
   | 'missing-ice-ufrag'
@@ -48,6 +50,12 @@ interface SdpValidateOptions {
 const MAX_STATIC_PT = 34;
 
 const usesDtls = (m: SdpMediaSection) => /(^|\/)(D?TLS)(\/|$)/.test(m.proto);
+
+/** Digest length in bytes of the hash functions of the IANA "Hash Function Textual Names" registry (RFC 8122 §5) */
+const HASH_BYTES: Record<string, number> = {
+  'md2': 16, 'md5': 16, 'sha-1': 20, 'sha-224': 28, 'sha-256': 32, 'sha-384': 48, 'sha-512': 64,
+};
+const HEX_PAIRS = /^[0-9A-Fa-f]{2}(:[0-9A-Fa-f]{2})*$/;
 
 /**
  * Checks a session description against RFC 8866 and the WebRTC SDP rules most often
@@ -143,9 +151,26 @@ const validate = (input: Sdp | string, options: SdpValidateOptions = {}): SdpIss
   };
   checkIceLength(sdp.iceUfrag, sdp.icePwd);
 
+  // --- a=fingerprint format (RFC 8122 §5): 2UHEX *(":" 2UHEX), digest length of the hash ---
+  const checkFingerprints = (section: SdpCommonAttributes, mediaIndex?: number) => {
+    for (const {hashFunction, fingerprint} of section.fingerprints ?? []) {
+      const bytes = HASH_BYTES[hashFunction.toLowerCase()];
+      if (!HEX_PAIRS.test(fingerprint)) {
+        error('invalid-fingerprint', `a=fingerprint:${hashFunction} must be colon-separated hex pairs (RFC 8122 §5)`, mediaIndex);
+      } else if (bytes !== undefined && fingerprint.split(':').length !== bytes) {
+        error('invalid-fingerprint',
+          `a=fingerprint:${hashFunction} has ${fingerprint.split(':').length} bytes, expected ${bytes} (RFC 8122 §5)`, mediaIndex);
+      } else if (fingerprint !== fingerprint.toUpperCase()) {
+        warning('fingerprint-not-uppercase', `a=fingerprint:${hashFunction} must use upper-case hex (RFC 8122 §5)`, mediaIndex);
+      }
+    }
+  };
+  checkFingerprints(sdp);
+
   media.forEach((m, i) => {
     const active = m.port !== 0;
     checkIceLength(m.iceUfrag, m.icePwd, i);
+    checkFingerprints(m, i);
     if (usesIce && active) {
       if ((m.iceUfrag ?? sdp.iceUfrag) === undefined) {
         error('missing-ice-ufrag', 'a=ice-ufrag is required (RFC 8839 §5.4)', i);

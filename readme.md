@@ -16,7 +16,8 @@ TypeScript, no runtime dependencies, works in Node.js and browsers.
 - **Lossless model**: each line maps to a typed field or, for attributes the library
   does not interpret, to an ordered `attributes` entry with the exact original value.
 - **`sdpWriter.write`**: serializes the model back to RFC 8866 text (CRLF).
-  `write(parse(x))` keeps every line of `x` (see [Writing](#writing)).
+  `write(parse(x))` keeps every line of `x`; attribute order and time units are
+  normalized (see [Writing](#writing)).
 - **`sdpValidator.validate`**: reports RFC and WebRTC rule violations as a list of issues.
 - **Typed WebRTC attributes**: ICE, DTLS, BUNDLE, codecs, simulcast, SSRCs (see below).
 
@@ -144,6 +145,8 @@ are covered as well.
 | `unknown-payload-type` | warning | `rtpmap`/`fmtp`/`rtcp-fb` for a payload type not in `m=` |
 | `missing-fingerprint`, `missing-setup` | error | DTLS transports (`UDP/TLS/RTP/SAVPF`, `UDP/DTLS/SCTP`, …) (RFC 8842 §5.2, §5.3) |
 | `setup-actpass-in-answer` | error | with `type: 'answer'` (RFC 5763 §5) |
+| `invalid-fingerprint` | error | colon-separated hex pairs; digest length matches the hash (`sha-256` → 32 bytes, …) (RFC 8122 §5) |
+| `fingerprint-not-uppercase` | warning | hex digits must be upper case (RFC 8122 §5) |
 | `missing-ice-ufrag`, `missing-ice-pwd` | error | if ICE is used, every active media has credentials (RFC 8839 §5.4) |
 | `ice-ufrag-length`, `ice-pwd-length` | error | 4–256 / 22–256 characters (RFC 8839 §5.4) |
 | `extmap-invalid-id`, `extmap-duplicate-id` | error | ids 1–14 or 16–255, unique per section (RFC 8285) |

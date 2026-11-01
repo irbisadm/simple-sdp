@@ -1,6 +1,6 @@
 {
   "name": "@irbisadm/simple-sdp",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "license": "MIT",
   "description": "Parse, modify, write and validate SDP (RFC 8866) for WebRTC and SIP. Typed ICE, DTLS, BUNDLE, simulcast, codecs. Zero dependencies.",
   "author": {
@@ -9,7 +9,10 @@
     "url": "https://www.linkedin.com/in/irbisadm/"
   },
   "private": false,
-  "repository": "https://github.com/irbisadm/simple-sdp",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/irbisadm/simple-sdp.git"
+  },
   "bugs": "https://github.com/irbisadm/simple-sdp/issues",
   "module": "./dist/index.mjs",
   "main": "./dist/index.mjs",
