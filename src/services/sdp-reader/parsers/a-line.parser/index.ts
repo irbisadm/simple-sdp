@@ -7,6 +7,7 @@ import {candidateParser} from "./candidate.parser";
 import {msidParser, ssrcGroupParser, ssrcParser} from "./ssrc.parser";
 import {ridParser, simulcastParser} from "./simulcast.parser";
 import {findCodec, flag, once, push, required, splitFirst} from "./helpers";
+import {stringToIntParser} from "../string-to-int.parser";
 
 type Scope = 'session' | 'media';
 
@@ -112,6 +113,40 @@ const handlers: Record<string, AttributeHandler> = {
   'simulcast': {
     scopes: MEDIA,
     parse: (section: SdpMediaSection, value) => once(section, 'simulcast', simulcastParser(required(value, 'a=simulcast:<send|recv> <streams>')), 'simulcast'),
+  },
+  'extmap-allow-mixed': {
+    scopes: BOTH,
+    parse: (section: SdpCommonAttributes, value) => once(section, 'extmapAllowMixed', flag(value), 'extmap-allow-mixed'),
+  },
+  'rtcp-mux': {
+    scopes: MEDIA,
+    parse: (section: SdpMediaSection, value) => once(section, 'rtcpMux', flag(value), 'rtcp-mux'),
+  },
+  'rtcp-rsize': {
+    scopes: MEDIA,
+    parse: (section: SdpMediaSection, value) => once(section, 'rtcpRsize', flag(value), 'rtcp-rsize'),
+  },
+  'rtcp': {
+    scopes: MEDIA,
+    parse: (section: SdpMediaSection, value) => {
+      const parts = required(value, 'a=rtcp:<port> [<nettype> <addrtype> <address>]').split(' ');
+      if (parts.length !== 1 && parts.length !== 4) {
+        throw new Error('expected "a=rtcp:<port> [<nettype> <addrtype> <address>]"');
+      }
+      const [port, netType, addrType, address] = parts;
+      once(section, 'rtcp', parts.length === 1
+        ? {port: stringToIntParser(port, 'port')}
+        : {port: stringToIntParser(port, 'port'), netType, addrType, address}, 'rtcp');
+    },
+  },
+  'sctp-port': {
+    scopes: MEDIA,
+    parse: (section: SdpMediaSection, value) => once(section, 'sctpPort', stringToIntParser(required(value, 'a=sctp-port:<port>'), 'sctp-port'), 'sctp-port'),
+  },
+  'max-message-size': {
+    scopes: MEDIA,
+    parse: (section: SdpMediaSection, value) =>
+      once(section, 'maxMessageSize', stringToIntParser(required(value, 'a=max-message-size:<size>'), 'max-message-size'), 'max-message-size'),
   },
   'rtpmap': {
     scopes: MEDIA,

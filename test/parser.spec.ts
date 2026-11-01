@@ -227,3 +227,30 @@ describe('simulcast in fixtures', () => {
     expect(video.simulcast).toEqual({send: [[{rid: 'q'}], [{rid: 'h'}], [{rid: 'f'}]]});
   });
 });
+
+describe('flags and transport attributes', () => {
+  test('Chrome: rtcp, rtcp-mux, rtcp-rsize, extmap-allow-mixed', () => {
+    const sdp = parseFixture('chrome-audio-video-offer');
+    expect(sdp.extmapAllowMixed).toBe(true);
+    const [audio, video] = sdp.media;
+    expect(audio).toMatchObject({rtcp: {port: 9, netType: 'IN', addrType: 'IP4', address: '0.0.0.0'}, rtcpMux: true, rtcpRsize: true});
+    expect(video).toMatchObject({rtcpMux: true, rtcpRsize: true});
+    expect(attr(audio, 'rtcp-xr')).toEqual(['rcvr-rtt=all']);
+    expect(audio.attributes?.map(a => a.name)).toEqual(['rtcp-xr']);
+  });
+  test('Firefox: media-level extmap-allow-mixed', () => {
+    const [audio] = parseFixture('firefox-audio-video-offer').media;
+    expect(audio.extmapAllowMixed).toBe(true);
+    expect(audio.rtcpRsize).toBeUndefined();
+  });
+  test('datachannel: sctp-port, max-message-size', () => {
+    const [m] = parseFixture('firefox-datachannel-answer').media;
+    expect(m).toMatchObject({sctpPort: 5000, maxMessageSize: 1073741823});
+    expect(m.attributes).toBeUndefined();
+  });
+  test('flags reject values', () => {
+    const head = 'v=0\r\no=- 1 1 IN IP4 h\r\ns=-\r\nt=0 0\r\nm=audio 9 RTP/AVP 0\r\n';
+    expect(() => sdpReader.parse(head + 'a=rtcp-mux:1\r\n')).toThrow('flag attribute must not have a value');
+    expect(() => sdpReader.parse(head + 'a=rtcp:9 IN IP4\r\n')).toThrow('a=rtcp');
+  });
+});

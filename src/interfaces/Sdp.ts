@@ -117,6 +117,14 @@ interface SdpSimulcast {
   recv?: SdpSimulcastStreams;
 }
 
+/** `a=rtcp:<port> [<nettype> <addrtype> <connection-address>]` — RFC 3605 */
+interface SdpRtcp {
+  port: number;
+  netType?: string;
+  addrType?: string;
+  address?: string;
+}
+
 /** Attributes allowed both at session level and at media level */
 interface SdpCommonAttributes {
   /** RFC 8866 §6.7. At session level it is the default for all media sections. */
@@ -135,6 +143,8 @@ interface SdpCommonAttributes {
   setup?: SdpSetup;
   /** `a=extmap` — RFC 8285 */
   extmap?: SdpExtmap[];
+  /** `a=extmap-allow-mixed` — RFC 8285 §6 */
+  extmapAllowMixed?: boolean;
   /** Attributes without a typed representation, in their original order */
   attributes?: SdpGenericAttribute[];
 }
@@ -252,6 +262,16 @@ interface SdpMediaSection extends SdpCommonAttributes {
   encryptionKey?: SdpEncryptionKey;
   /** `a=mid` — RFC 5888 §4 */
   mid?: string;
+  /** `a=rtcp` — RFC 3605 */
+  rtcp?: SdpRtcp;
+  /** `a=rtcp-mux` — RFC 5761 */
+  rtcpMux?: boolean;
+  /** `a=rtcp-rsize` — RFC 5506 */
+  rtcpRsize?: boolean;
+  /** `a=sctp-port` — RFC 8841 §5 */
+  sctpPort?: number;
+  /** `a=max-message-size` — RFC 8841 §6 */
+  maxMessageSize?: number;
   /** `a=candidate` — RFC 8839 §5.1 */
   candidates?: SdpCandidate[];
   /** `a=msid` — RFC 8830. Several lines are allowed. */
@@ -308,6 +328,7 @@ export {
   SdpSsrc,
   SdpSsrcGroup,
   SdpRid,
+  SdpRtcp,
   SdpSimulcast,
   SdpSimulcastRid,
   SdpSimulcastStreams,
