@@ -4,17 +4,15 @@ import {lineTimeParser} from "./line-time.parser";
 
 export const rLineParser = (line: string): SdpRepeatTimes => {
   const repeatParts = linePartsParser(line, 'r');
-  const repeatInterval = lineTimeParser(repeatParts[0]);
-  const activeDuration = lineTimeParser(repeatParts[0]);
-  const sdpRepeatTimes: SdpRepeatTimes = {
-    repeatInterval,
-    activeDuration
+  if (repeatParts.length < 2) {
+    throw new Error(`Invalid repeat line "${line}": expected "r=<repeat interval> <active duration> <offsets>"`);
   }
-  if (repeatParts.length > 3) {
-    sdpRepeatTimes.offsets = [];
-    for (let i = 2; i < repeatParts.length; i++) {
-      sdpRepeatTimes.offsets.push(lineTimeParser(repeatParts[i]));
-    }
+  const sdpRepeatTimes: SdpRepeatTimes = {
+    repeatInterval: lineTimeParser(repeatParts[0]),
+    activeDuration: lineTimeParser(repeatParts[1]),
+  }
+  if (repeatParts.length > 2) {
+    sdpRepeatTimes.offsets = repeatParts.slice(2).map(lineTimeParser);
   }
   return sdpRepeatTimes;
 }
