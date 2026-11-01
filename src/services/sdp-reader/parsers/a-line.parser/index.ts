@@ -1,4 +1,4 @@
-import {Sdp, SdpAVMediaSection, SdpMediaSection} from "../../../../inerfaces/Sdp";
+import {Sdp, SdpAVMediaSection, SdpMediaSection} from "../../../../interfaces/Sdp";
 import {setIceAttr} from "./set-ice-attr";
 import {setDtlsAttr} from "./set-dtls-attr";
 import {groupParser} from "./group.parser";

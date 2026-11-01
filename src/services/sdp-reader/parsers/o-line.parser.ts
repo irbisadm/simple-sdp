@@ -1,4 +1,4 @@
-import {SdpOrigin} from "../../../inerfaces/Sdp";
+import {SdpOrigin} from "../../../interfaces/Sdp";
 import {linePartsParser} from "./line-parts.parser";
 
 export const oLineParser = (line: string): SdpOrigin => {

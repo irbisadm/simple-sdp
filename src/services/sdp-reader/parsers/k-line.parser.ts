@@ -1,4 +1,4 @@
-import {SdpEncryptionKey} from "../../../inerfaces/Sdp";
+import {SdpEncryptionKey} from "../../../interfaces/Sdp";
 
 export const kLineParser = (line: string): SdpEncryptionKey => {
   const lineContent = line.replace('k=', '');

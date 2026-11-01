@@ -1,4 +1,4 @@
-import {Sdp, SdpMediaSection} from "../../inerfaces/Sdp";
+import {Sdp, SdpMediaSection} from "../../interfaces/Sdp";
 import {vLineParser} from "./parsers/v-line.parser";
 import {oLineParser} from "./parsers/o-line.parser";
 import {sLineParser} from "./parsers/s-line.parser";

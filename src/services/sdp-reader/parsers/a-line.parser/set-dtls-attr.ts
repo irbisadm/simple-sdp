@@ -1,4 +1,4 @@
-import {Sdp, SdpDtlsAttribute, SdpMediaSection} from "../../../../inerfaces/Sdp";
+import {Sdp, SdpDtlsAttribute, SdpMediaSection} from "../../../../interfaces/Sdp";
 
 export const setDtlsAttr = <T extends keyof SdpDtlsAttribute>(section: Sdp | SdpMediaSection, field:T, value: SdpDtlsAttribute[T]) => {
   if (!section.dtls) {

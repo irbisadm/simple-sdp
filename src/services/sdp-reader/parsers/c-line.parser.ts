@@ -1,4 +1,4 @@
-import {SdpConnectionInformation} from "../../../inerfaces/Sdp";
+import {SdpConnectionInformation} from "../../../interfaces/Sdp";
 import {linePartsParser} from "./line-parts.parser";
 
 export const cLineParser = (line:string):SdpConnectionInformation=>{

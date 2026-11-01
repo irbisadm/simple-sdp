@@ -1,4 +1,4 @@
-import {SdpBandwidthInformation} from "../../../inerfaces/Sdp";
+import {SdpBandwidthInformation} from "../../../interfaces/Sdp";
 import {stringToIntParser} from "./string-to-int.parser";
 
 export const bLineParser = (line: string): SdpBandwidthInformation => {

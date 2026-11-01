@@ -1,4 +1,4 @@
-import {SdpAppMediaSection, SdpAVMediaSection, SdpMediaSection, SdpOtherMediaSection} from "../../../inerfaces/Sdp";
+import {SdpAppMediaSection, SdpAVMediaSection, SdpMediaSection, SdpOtherMediaSection} from "../../../interfaces/Sdp";
 import {linePartsParser} from "./line-parts.parser";
 
 const parsePorts = (ports: string): number[] => {

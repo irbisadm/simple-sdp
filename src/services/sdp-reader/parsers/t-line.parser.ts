@@ -1,4 +1,4 @@
-import {SdpTiming} from "../../../inerfaces/Sdp";
+import {SdpTiming} from "../../../interfaces/Sdp";
 import {linePartsParser} from "./line-parts.parser";
 
 export const tLineParser = (line:string):SdpTiming=>{

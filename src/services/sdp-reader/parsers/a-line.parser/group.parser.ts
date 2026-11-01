@@ -1,4 +1,4 @@
-import {Sdp, SdpGroup} from "../../../../inerfaces/Sdp";
+import {Sdp, SdpGroup} from "../../../../interfaces/Sdp";
 
 export const groupParser = (section:Sdp, value: string)=>{
   if(!section.group){

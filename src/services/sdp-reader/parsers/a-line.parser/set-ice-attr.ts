@@ -1,4 +1,4 @@
-import {Sdp, SdpIceAttributes, SdpMediaSection} from "../../../../inerfaces/Sdp";
+import {Sdp, SdpIceAttributes, SdpMediaSection} from "../../../../interfaces/Sdp";
 
 export const setIceAttr = <T extends keyof SdpIceAttributes>(section: Sdp | SdpMediaSection, field:T, value: SdpIceAttributes[T]) => {
   if (!section.ice) {

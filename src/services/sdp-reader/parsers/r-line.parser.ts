@@ -1,4 +1,4 @@
-import {SdpRepeatTimes} from "../../../inerfaces/Sdp";
+import {SdpRepeatTimes} from "../../../interfaces/Sdp";
 import {linePartsParser} from "./line-parts.parser";
 import {lineTimeParser} from "./line-time.parser";
 

@@ -1,4 +1,4 @@
-import {SdpMediaSection} from "../../../../inerfaces/Sdp";
+import {SdpMediaSection} from "../../../../interfaces/Sdp";
 
 export const extmapParser = (section:SdpMediaSection, line:string)=>{
   if(!section.extmap){

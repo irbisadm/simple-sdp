@@ -1,4 +1,4 @@
-import {SdpAVMediaSection} from "../../../../inerfaces/Sdp";
+import {SdpAVMediaSection} from "../../../../interfaces/Sdp";
 
 export const fmtpParser = (section:SdpAVMediaSection, line:string)=>{
   const lineParts = line.split(' ');
