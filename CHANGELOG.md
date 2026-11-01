@@ -3,6 +3,18 @@
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). The project
 follows [Semantic Versioning](https://semver.org/).
 
+## [1.0.0] — unreleased
+
+The model of 0.2.0 is now the stable 1.x API. No breaking changes since 0.2.0.
+
+### Added
+- `sdpWriter.write(sdp): string`. Lines are written in RFC 8866 §5 order with CRLF;
+  attribute order inside a section is normalized (see README, "Writing"). Round-trip
+  tests cover every fixture.
+- `sdpValidator.validate(sdp | text, {type?}): SdpIssue[]`, plus types `SdpIssue`,
+  `SdpIssueCode` and `SdpValidateOptions` (rules: README, "Validation").
+- `package.json`: an `exports` map with `types` and `sideEffects: false`.
+
 ## [0.2.0] — unreleased
 
 Parser rewrite: strict RFC 8866, a lossless model, typed WebRTC attributes. **Breaking.**

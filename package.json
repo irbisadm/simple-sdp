@@ -1,8 +1,8 @@
 {
   "name": "@irbisadm/simple-sdp",
-  "version": "0.2.0",
+  "version": "1.0.0",
   "license": "MIT",
-  "description": "Strict, typed SDP (RFC 8866) parser for WebRTC and SIP: ICE, DTLS, BUNDLE, simulcast, codecs. Zero dependencies.",
+  "description": "Parse, modify, write and validate SDP (RFC 8866) for WebRTC and SIP. Typed ICE, DTLS, BUNDLE, simulcast, codecs. Zero dependencies.",
   "author": {
     "email": "i@irbisadm.dev",
     "name": "Igor Sheko",
@@ -14,12 +14,22 @@
   "module": "./dist/index.mjs",
   "main": "./dist/index.mjs",
   "types": "./types/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./types/index.d.ts",
+      "import": "./dist/index.mjs",
+      "default": "./dist/index.mjs"
+    }
+  },
+  "sideEffects": false,
   "keywords": [
     "sdp",
     "webrtc",
     "sip",
     "rfc8866",
     "rfc4566",
+    "sdp-writer",
+    "sdp-validator",
     "sdp-parser",
     "typescript",
     "parser",
