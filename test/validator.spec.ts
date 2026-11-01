@@ -4,10 +4,13 @@ import {fixtureNames, loadFixture} from './fixtures';
 const lines = (...l: string[]) => l.join('\r\n') + '\r\n';
 const codes = (input: Sdp | string, type?: 'offer' | 'answer') => sdpValidator.validate(input, {type}).map(i => i.code);
 
+// A real-length sha-256 fingerprint (32 bytes)
+const FP = '15:A8:92:10:AA:AB:95:C0:EB:A0:19:3F:D0:6F:CE:23:A3:49:D2:1E:89:CF:8A:09:2A:70:77:2F:AA:D8:55:AC';
+
 const HEAD = ['v=0', 'o=- 1 1 IN IP4 127.0.0.1', 's=-', 't=0 0'];
 const WEBRTC_AUDIO = [
   'm=audio 9 UDP/TLS/RTP/SAVPF 111', 'c=IN IP4 0.0.0.0',
-  'a=ice-ufrag:abcd', 'a=ice-pwd:0123456789012345678901', 'a=fingerprint:sha-256 AA:BB', 'a=setup:actpass',
+  'a=ice-ufrag:abcd', 'a=ice-pwd:0123456789012345678901', `a=fingerprint:sha-256 ${FP}`, 'a=setup:actpass',
   'a=mid:0', 'a=rtpmap:111 opus/48000/2',
 ];
 
@@ -73,7 +76,26 @@ describe('sdpValidator.validate', () => {
 
   test('DTLS: session-level fingerprint/setup count (Firefox style)', () => {
     const media = WEBRTC_AUDIO.filter(l => !l.startsWith('a=fingerprint') && !l.startsWith('a=setup'));
-    expect(codes(lines(...HEAD, 'a=fingerprint:sha-256 AA:BB', 'a=setup:actpass', ...media))).toEqual([]);
+    expect(codes(lines(...HEAD, `a=fingerprint:sha-256 ${FP}`, 'a=setup:actpass', ...media))).toEqual([]);
+  });
+
+  test('fingerprint format and digest length', () => {
+    const withFp = (value: string) => lines(...HEAD, ...WEBRTC_AUDIO.map(l => l.startsWith('a=fingerprint') ? `a=fingerprint:${value}` : l));
+    expect(codes(withFp('sha-256 AA:BB'))).toEqual(['invalid-fingerprint']);
+    expect(sdpValidator.validate(withFp('sha-256 AA:BB'))[0].message).toBe('a=fingerprint:sha-256 has 2 bytes, expected 32 (RFC 8122 §5)');
+    expect(codes(withFp('sha-256 ' + FP.slice(0, -1) + 'Z'))).toEqual(['invalid-fingerprint']);
+    expect(codes(withFp('sha-256 ' + FP.replace(/:/g, '')))).toEqual(['invalid-fingerprint']);
+    expect(codes(withFp('sha-256 ' + FP.toLowerCase()))).toEqual(['fingerprint-not-uppercase']);
+    expect(codes(withFp('SHA-256 ' + FP))).toEqual([]);
+    expect(codes(withFp('sha-1 ' + FP.split(':').slice(0, 20).join(':')))).toEqual([]);
+    expect(codes(withFp('x-custom AA:BB'))).toEqual([]); // unknown hash: format only
+  });
+
+  test('session-level fingerprint is checked too', () => {
+    const media = WEBRTC_AUDIO.filter(l => !l.startsWith('a=fingerprint'));
+    expect(sdpValidator.validate(lines(...HEAD, 'a=fingerprint:sha-256 AA:BB', ...media))).toEqual([
+      {severity: 'error', code: 'invalid-fingerprint', message: 'a=fingerprint:sha-256 has 2 bytes, expected 32 (RFC 8122 §5)'},
+    ]);
   });
 
   test('ICE: missing and malformed credentials', () => {
@@ -93,7 +115,7 @@ describe('sdpValidator.validate', () => {
 
   test('simulcast and rid consistency', () => {
     const video = ['m=video 9 UDP/TLS/RTP/SAVPF 96', 'c=IN IP4 0.0.0.0', 'a=ice-ufrag:abcd', 'a=ice-pwd:0123456789012345678901',
-      'a=fingerprint:sha-256 AA:BB', 'a=setup:actpass', 'a=mid:0', 'a=rtpmap:96 VP8/90000'];
+      `a=fingerprint:sha-256 ${FP}`, 'a=setup:actpass', 'a=mid:0', 'a=rtpmap:96 VP8/90000'];
     expect(codes(lines(...HEAD, ...video, 'a=rid:q send', 'a=rid:h send pt=97', 'a=simulcast:send q;h;f'))).toEqual(['simulcast-unknown-rid', 'rid-unknown-payload-type']);
     expect(codes(lines(...HEAD, ...video, 'a=rid:q recv', 'a=simulcast:send q'))).toEqual(['simulcast-unknown-rid']);
   });

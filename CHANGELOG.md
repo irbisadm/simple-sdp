@@ -3,7 +3,15 @@
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). The project
 follows [Semantic Versioning](https://semver.org/).
 
-## [1.0.0] — unreleased
+## [Unreleased]
+
+### Added
+- Validator: `invalid-fingerprint` (error) checks that `a=fingerprint` is colon-separated
+  hex pairs with the digest length of its hash function (md2/md5 16, sha-1 20, sha-224 28,
+  sha-256 32, sha-384 48, sha-512 64 bytes); `fingerprint-not-uppercase` (warning).
+  RFC 8122 §5. Previously a truncated value such as `sha-256 AA:BB` passed.
+
+## [1.0.0] — 2026-11-01
 
 The model of 0.2.0 is now the stable 1.x API. No breaking changes since 0.2.0.
 
@@ -15,7 +23,7 @@ The model of 0.2.0 is now the stable 1.x API. No breaking changes since 0.2.0.
   `SdpIssueCode` and `SdpValidateOptions` (rules: README, "Validation").
 - `package.json`: an `exports` map with `types` and `sideEffects: false`.
 
-## [0.2.0] — unreleased
+## [0.2.0] — not published
 
 Parser rewrite: strict RFC 8866, a lossless model, typed WebRTC attributes. **Breaking.**
 
