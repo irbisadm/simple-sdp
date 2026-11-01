@@ -199,11 +199,17 @@ this package against the wasm build, plus a differential test that compares both
 implementations on all fixtures and on thousands of mutations of them: same model, same
 written text, same issues, same error messages.
 
-| Platform | Package | Runtime |
+| Platform | Get it | Runtime |
 |---|---|---|
-| iOS 18+, macOS 15+ | Swift package `SimpleSdp` ([`Package.swift`](Package.swift), [`platforms/apple`](platforms/apple)) | [WasmKit](https://github.com/swiftwasm/WasmKit) interpreter |
-| Android, JVM 11+ | Kotlin library `dev.irbisadm:simple-sdp` ([`platforms/kotlin`](platforms/kotlin)) | [Chicory](https://chicory.dev), compiled to bytecode at build time |
-| Browser, Node.js, other wasm hosts | `wasm/build/simple-sdp.wasm` (`yarn asbuild`) | any |
+| iOS 18+, macOS 15+ | SwiftPM: `.package(url: "https://github.com/irbisadm/simple-sdp.git", from: "1.2.0")`, product `SimpleSdp` ([`platforms/apple`](platforms/apple)) | [WasmKit](https://github.com/swiftwasm/WasmKit) interpreter |
+| Android, JVM 11+ | JitPack: `maven("https://jitpack.io")`, `implementation("com.github.irbisadm:simple-sdp:v1.2.0")` ([`platforms/kotlin`](platforms/kotlin)) | [Chicory](https://chicory.dev), compiled to bytecode at build time |
+| Browser, Node.js | npm: `import {sdpReader} from '@irbisadm/simple-sdp/wasm'` — the API of the main entry point | the JS engine |
+| Other wasm hosts | `simple-sdp.wasm` from [GitHub Releases](https://github.com/irbisadm/simple-sdp/releases) or `@irbisadm/simple-sdp/wasm/simple-sdp.wasm` | any |
+
+For JavaScript the TypeScript build is the faster choice (see the timings below); the
+`/wasm` entry point exists for parity checks and for environments that prefer one shared
+implementation. It is an ES module with top-level await that loads `simple-sdp.wasm` through
+`new URL("simple-sdp.wasm", import.meta.url)`: Node.js 17+ and Vite handle it as is.
 
 The model crosses the wasm boundary as JSON with the shape of the TypeScript `Sdp` interface.
 
@@ -246,8 +252,9 @@ Approximate time to parse / write an 18 KB Chrome offer on x86-64, JSON transfer
 wasm in Node.js 1.3 / 1.2 ms (the TypeScript build: 0.35 / 0.25 ms), JVM with the compiled
 module 6 / 9 ms, WasmKit (release build) ≈10 ms each.
 
-JavaScript hosts can use the generated ESM bindings (`wasm/build/simple-sdp.js`) with
-string arguments: `parse(text)`, `write(json)`, `validate(text, type)`, `validateModel(json, type)`.
+The generated ESM bindings (`wasm/build/simple-sdp.js`, published as
+`wasm/dist/simple-sdp.mjs`) take strings: `parse(text)`, `write(json)`, `validate(text, type)`,
+`validateModel(json, type)`.
 
 Build: `yarn asbuild` compiles the module and copies it into `platforms/` (the copies are
 committed so that SwiftPM and Gradle builds do not need Node.js).

@@ -139,7 +139,7 @@ class SimpleSdpTest {
 
     @Test
     fun version() {
-        assertEquals("1.1.0", sdp.version)
+        assertEquals(System.getProperty("version"), sdp.version)
         assertEquals(JsonPrimitive(0), sdp.parse(lines("v=0", "o=- 1 1 IN IP4 h", "s=-", "t=0 0"))["protocolVersion"])
     }
 }
