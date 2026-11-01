@@ -1,6 +1,18 @@
 import {SdpCodec, SdpMediaSection} from "../../../../interfaces/Sdp";
 import {stringToIntParser} from "../string-to-int.parser";
 
+/**
+ * `record[key]` for own properties only, so that names like `constructor` or `toString`
+ * do not resolve to members of `Object.prototype`.
+ */
+export const own = <T>(record: Record<string, T>, key: string): T | undefined =>
+  Object.prototype.hasOwnProperty.call(record, key) ? record[key] : undefined;
+
+/** `record[key] = value` that also stores `__proto__` as an ordinary key */
+export const setOwn = <T>(record: Record<string, T>, key: string, value: T): void => {
+  Object.defineProperty(record, key, {value, writable: true, enumerable: true, configurable: true});
+}
+
 /** Throws if the value is missing */
 export const required = (value: string | undefined, syntax: string): string => {
   if (value === undefined || value.length === 0) {

@@ -2,6 +2,7 @@ import {Sdp, SdpCommonAttributes, SdpMediaSection} from "../../interfaces/Sdp";
 import {SdpParseError} from "../../errors";
 import {sdpReader} from "../sdp-reader";
 import {isRtpProto} from "../sdp-reader/parsers/m-line.parser";
+import {own} from "../sdp-reader/parsers/a-line.parser/helpers";
 
 type SdpIssueCode =
   | 'parse-error'
@@ -154,7 +155,7 @@ const validate = (input: Sdp | string, options: SdpValidateOptions = {}): SdpIss
   // --- a=fingerprint format (RFC 8122 §5): 2UHEX *(":" 2UHEX), digest length of the hash ---
   const checkFingerprints = (section: SdpCommonAttributes, mediaIndex?: number) => {
     for (const {hashFunction, fingerprint} of section.fingerprints ?? []) {
-      const bytes = HASH_BYTES[hashFunction.toLowerCase()];
+      const bytes = own(HASH_BYTES, hashFunction.toLowerCase());
       if (!HEX_PAIRS.test(fingerprint)) {
         error('invalid-fingerprint', `a=fingerprint:${hashFunction} must be colon-separated hex pairs (RFC 8122 §5)`, mediaIndex);
       } else if (bytes !== undefined && fingerprint.split(':').length !== bytes) {

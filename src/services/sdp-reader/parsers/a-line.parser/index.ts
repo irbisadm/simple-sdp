@@ -6,7 +6,7 @@ import {fmtpParametersParser} from "./fmtp.parser";
 import {candidateParser} from "./candidate.parser";
 import {msidParser, ssrcGroupParser, ssrcParser} from "./ssrc.parser";
 import {ridParser, simulcastParser} from "./simulcast.parser";
-import {findCodec, flag, once, push, required, splitFirst} from "./helpers";
+import {findCodec, flag, once, own, push, required, splitFirst} from "./helpers";
 import {stringToIntParser} from "../string-to-int.parser";
 
 type Scope = 'session' | 'media';
@@ -201,7 +201,7 @@ export const aLineParser = (section: Sdp | SdpMediaSection, scope: Scope, attrib
   if (name.length === 0) {
     throw new Error('empty attribute name');
   }
-  const handler = handlers[name];
+  const handler = own(handlers, name);
   if (handler && handler.scopes.includes(scope) && handler.parse(section, value) !== false) {
     return;
   }
