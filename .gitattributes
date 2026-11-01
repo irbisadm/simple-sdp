@@ -1,0 +1,2 @@
+# SDP fixtures must keep their original CRLF line endings
+*.sdp -text

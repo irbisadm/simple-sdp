@@ -1,0 +1,17 @@
+v=0
+o=- 6113309896035506875 2 IN IP4 127.0.0.1
+s=-
+t=0 0
+a=group:BUNDLE 0
+a=extmap-allow-mixed
+a=msid-semantic: WMS
+m=application 9 UDP/DTLS/SCTP webrtc-datachannel
+c=IN IP4 0.0.0.0
+a=ice-ufrag:pWJw
+a=ice-pwd:MbiMrLLwrvo1q/suW9Ij7Kip
+a=ice-options:trickle
+a=fingerprint:sha-256 D4:3C:EE:15:07:4C:3F:4B:15:6D:EA:AF:5F:01:38:86:5E:EF:FF:B5:1B:5C:6C:9F:98:B2:46:04:90:2F:ED:19
+a=setup:active
+a=mid:0
+a=sctp-port:5000
+a=max-message-size:262144
