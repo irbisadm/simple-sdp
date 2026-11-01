@@ -1,0 +1,35 @@
+# simple-sdp for Kotlin (JVM / Android)
+
+Parse, write and validate SDP (RFC 8866) on the JVM and on Android. The library runs the
+WebAssembly build of [simple-sdp](../../readme.md) (an AssemblyScript port of the TypeScript
+package, `assembly/`) with [Chicory](https://chicory.dev). The module is compiled to JVM
+bytecode when the library is built (`compileWasm` task), so Android needs neither native
+code nor run-time code generation. Runtime dependencies: `chicory:runtime` and
+`kotlinx-serialization-json`.
+
+```kotlin
+val sdp = SimpleSdp()                       // load once, reuse; thread-safe
+
+val model = sdp.parse(offer)                // JsonObject, shape of the TypeScript `Sdp`
+val issues = sdp.validate(model, SdpType.OFFER)
+val text = sdp.write(model)
+
+try {
+    sdp.parse(text)
+} catch (e: SdpParseException) {
+    e.lineNumber; e.line; e.reason
+}
+```
+
+- `parse(sdp): JsonObject`, `parseToJson(sdp): String`, `isValid(sdp)`
+- `write(model: JsonObject)`, `write(modelJson: String)` — throws `SdpModelException`
+- `validate(sdp: String, type)`, `validate(model: JsonObject, type)`, `validateModel(json, type)` → `List<SdpIssue>`
+
+## Build
+
+```sh
+./gradlew test        # tests use ../../test/fixtures
+```
+
+`src/main/wasm/simple-sdp.wasm` is produced by `yarn asbuild` in the repository root.
+`SimpleSdp(wasmBytes)` runs another build of the module on the Chicory interpreter.
