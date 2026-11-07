@@ -162,6 +162,6 @@ final class SimpleSdpTests: XCTestCase {
     }
 
     func testVersion() throws {
-        XCTAssertEqual(try sdp.version(), "1.2.1-rc.1")
+        XCTAssertEqual(try sdp.version(), "1.3.0")
     }
 }

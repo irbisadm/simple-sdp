@@ -3,9 +3,7 @@
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). The project
 follows [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
-
-A new feature, so the next release is a minor one (1.3.0).
+## [1.3.0] — 2026-11-07
 
 ### Added
 - Lenient parsing: `sdpReader.parseLenient(text)` never throws, keeps everything the text

@@ -24,7 +24,7 @@ import {issuesToJson, sdpFromJson, sdpToJson} from './serialize';
 import {jsonArray, JsonObject, parseJson, quote} from './json';
 import {resetError, takeError} from './util';
 
-export const VERSION = '1.2.1-rc.1';
+export const VERSION = '1.3.0';
 
 // Memory: the module uses the minimal runtime, whose GC runs only when __collect() is
 // called and does not scan the stack. Every export collects right before it returns, when
