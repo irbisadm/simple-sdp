@@ -32,6 +32,18 @@ for (const text of ['', 'v=1\r\n', 'v=0\r\ns=-\r\no=- 1 1 IN IP4 h\r\nt=0 0\r\n'
   assert.deepEqual(outcome(() => wasm.sdpReader.parse(text)), outcome(() => ts.sdpReader.parse(text)), JSON.stringify(text));
   assert.equal(wasm.sdpReader.isValid(text), ts.sdpReader.isValid(text));
 }
+const lenientFixtures = path.join(path.dirname(fileURLToPath(import.meta.url)), '../test/fixtures-lenient');
+const lenientTexts = [
+  ...names.map(name => fs.readFileSync(path.join(fixtures, name), 'utf8')),
+  ...fs.readdirSync(lenientFixtures).filter(f => f.endsWith('.sdp')).map(f => fs.readFileSync(path.join(lenientFixtures, f), 'utf8')),
+  '', 'garbage', 'v=0\r\ns=-\r\no=- 1 1 IN IP4 h\r\nt=0 0\r\nm=audio x RTP/AVP 0\r\n',
+];
+for (const text of lenientTexts) {
+  const result = ts.sdpReader.parseLenient(text);
+  assert.deepEqual(plain(wasm.sdpReader.parseLenient(text)), plain(result), JSON.stringify(text));
+  assert.equal(wasm.sdpReader.isComplete(result.sdp), ts.sdpReader.isComplete(result.sdp));
+  assert.deepEqual(wasm.sdpValidator.validate(text, {lenient: true}), ts.sdpValidator.validate(text, {lenient: true}));
+}
 assert.deepEqual(outcome(() => wasm.sdpWriter.write({media: []})), outcome(() => ts.sdpWriter.write({media: []})));
 assert.equal(wasm.version, ts.version);
 

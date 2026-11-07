@@ -46,8 +46,35 @@ data class SdpIssue(
     val message: String,
     /** Index in `media`, if the issue belongs to a media section */
     val mediaIndex: Int? = null,
-    /** For `parse-error`: the line number reported by the parser */
+    /** For `parse-error` and `lenient:*`: the line number reported by the parser */
     val lineNumber: Int? = null,
+)
+
+/** A deviation from RFC 8866 found by [SimpleSdp.parseLenient] */
+@Serializable
+data class SdpParseWarning(
+    /** Stable machine-readable code, e.g. `out-of-order`; the codes are listed in the README */
+    val code: String,
+    /** The same text that [SimpleSdp.parse] reports for the same problem */
+    val reason: String,
+    /** 1-based line number, or 0 when the warning is not tied to a line (a missing line) */
+    val lineNumber: Int,
+    /** The offending line as it appears in the input, without the terminator; empty when [lineNumber] is 0 */
+    val line: String,
+    /** What was done with the line: `kept`, `skipped`, `generic-attribute`, `first-kept` or `repaired` */
+    val action: String,
+)
+
+/** The result of [SimpleSdp.parseLenient] */
+data class SdpLenientResult(
+    /**
+     * The model (the JSON form of the TypeScript `SdpLenient`): like the strict model, but
+     * `protocolVersion`, `origin`, `sessionName`, `timing` and a media section's `port` and
+     * `proto` may be absent
+     */
+    val sdp: JsonObject,
+    /** In line order; warnings with `lineNumber` 0 come last */
+    val warnings: List<SdpParseWarning>,
 )
 
 /**
@@ -79,6 +106,8 @@ class SimpleSdp private constructor(
         val free: ExportFunction = instance.export("sdp_free")
         val len: ExportFunction = instance.export("sdp_len")
         val parse: ExportFunction = instance.export("sdp_parse")
+        val parseLenient: ExportFunction = instance.export("sdp_parse_lenient")
+        val validateLenient: ExportFunction = instance.export("sdp_validate_lenient")
         val write: ExportFunction = instance.export("sdp_write")
         val validate: ExportFunction = instance.export("sdp_validate")
         val validateModel: ExportFunction = instance.export("sdp_validate_model")
@@ -140,6 +169,19 @@ class SimpleSdp private constructor(
      */
     fun parse(sdp: String): JsonObject = envelope(call({ it.parse }, sdp))["sdp"]!!.jsonObject
 
+    /**
+     * Parses a session description without failing: every deviation from RFC 8866 that
+     * [parse] rejects is reported as a warning, and the model keeps what the text allows.
+     * Lines may be terminated by CRLF, LF or CR.
+     */
+    fun parseLenient(sdp: String): SdpLenientResult {
+        val result = envelope(call({ it.parseLenient }, sdp))
+        return SdpLenientResult(
+            result["sdp"]!!.jsonObject,
+            result["warnings"]!!.jsonArray.map { Json.decodeFromJsonElement<SdpParseWarning>(it) },
+        )
+    }
+
     /** [parse] returning the model as a JSON string */
     fun parseToJson(sdp: String): String = parse(sdp).toString()
 
@@ -168,6 +210,13 @@ class SimpleSdp private constructor(
      */
     fun validate(sdp: String, type: SdpType? = null): List<SdpIssue> =
         issues(call({ it.validate }, sdp, type?.code ?: 0))
+
+    /**
+     * [validate] on a description parsed with [parseLenient]: each parse warning becomes a
+     * `lenient:<code>` issue with severity `warning`, then the other checks run on the model.
+     */
+    fun validateLenient(sdp: String, type: SdpType? = null): List<SdpIssue> =
+        issues(call({ it.validateLenient }, sdp, type?.code ?: 0))
 
     /**
      * Checks a model, e.g. after modifying it.

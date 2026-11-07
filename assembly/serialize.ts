@@ -132,7 +132,7 @@ function candidateJson(c: Candidate): string {
 }
 
 function mediaJson(m: MediaSection): string {
-  const o = new JsonObject().str('type', m.type).num('port', m.port).optNum('numberOfPorts', m.numberOfPorts).str('proto', m.proto);
+  const o = new JsonObject().str('type', m.type).optNum('port', m.port).optNum('numberOfPorts', m.numberOfPorts).optStr('proto', m.proto);
   const formats = m.formats;
   if (formats !== null) {
     o.raw('formats', strArray(formats));
@@ -567,9 +567,9 @@ function simulcastStreamsFrom(items: JsonValue[] | null, path: string): Array<Ar
 function mediaFrom(o: JsonValue, path: string): MediaSection {
   const m = new MediaSection();
   m.type = reqStr(o, 'type', path);
-  m.port = reqNum(o, 'port', path);
+  m.port = optNum(o, 'port', path);
   m.numberOfPorts = optNum(o, 'numberOfPorts', path);
-  m.proto = reqStr(o, 'proto', path);
+  m.proto = optStr(o, 'proto', path);
   m.formats = strList(optArr(o, 'formats', path), `${path}.formats`);
   const codecs = objList(optArr(o, 'codecs', path), `${path}.codecs`);
   if (codecs !== null) {

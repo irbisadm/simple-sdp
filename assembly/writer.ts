@@ -208,6 +208,15 @@ function pushAll(lines: Lines, prefix: string, list: string[] | null): void {
 }
 
 function media(lines: Lines, m: MediaSection): bool {
+  if (!present(m.port)) {
+    fail(`media section "${m.type}" has no port`);
+    return false;
+  }
+  const proto = m.proto;
+  if (proto === null) {
+    fail(`media section "${m.type}" has no proto`);
+    return false;
+  }
   let formats: string[] | null = m.formats;
   const codecs = m.codecs;
   if (codecs !== null) {
@@ -221,7 +230,7 @@ function media(lines: Lines, m: MediaSection): bool {
     return false;
   }
   const ports = present(m.numberOfPorts) ? '/' + fmtNum(m.numberOfPorts) : '';
-  lines.push(`m=${m.type} ${fmtNum(m.port)}${ports} ${m.proto} ${formats.join(' ')}`);
+  lines.push(`m=${m.type} ${fmtNum(m.port)}${ports} ${proto} ${formats.join(' ')}`);
   const information = m.information;
   if (information !== null) {
     lines.push(`i=${information}`);

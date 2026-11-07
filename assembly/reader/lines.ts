@@ -101,7 +101,7 @@ export function mLineParser(value: string): MediaSection | null {
     }
   }
   const fmt = parts.slice(3);
-  if (isRtpProto(section.proto)) {
+  if (isRtpProto(parts[2])) {
     const codecs = new Array<Codec>(0);
     for (let i = 0; i < fmt.length; i++) {
       const payloadType = stringToInt(fmt[i], 'payload type');

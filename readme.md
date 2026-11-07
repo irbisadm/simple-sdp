@@ -129,7 +129,7 @@ the input, non-attribute lines keep their order, and `parse(write(parse(x)))` de
 
 ## Validation
 
-`sdpValidator.validate(sdp | text, {type?: 'offer' | 'answer'})` returns
+`sdpValidator.validate(sdp | text, {type?: 'offer' | 'answer', lenient?: boolean})` returns
 `SdpIssue[]` (`{severity, code, message, mediaIndex?, lineNumber?}`). Text is parsed first.
 A parse failure is reported as one `parse-error` issue, so the RFC 8866 §5 order rules
 are covered as well.
@@ -137,6 +137,7 @@ are covered as well.
 | Code | Severity | Rule |
 |---|---|---|
 | `parse-error` | error | `sdpReader.parse` failed |
+| `lenient:<code>` | warning | with `{lenient: true}`: a warning of `sdpReader.parseLenient` (see [Lenient parsing](#lenient-parsing)) |
 | `invalid-version`, `missing-origin`, `missing-session-name`, `missing-timing` | error | mandatory `v=`/`o=`/`s=`/`t=` (for hand-built objects) |
 | `empty-session-name` | warning | `s=` must not be empty (RFC 8866 §5.3) |
 | `missing-connection` | error | `c=` at session level or in every media description (RFC 8866 §5.7) |
@@ -171,6 +172,79 @@ a missing final line terminator, RFC 4566-style `z=` after several `t=` lines.
 
 Known limitation: more than one `c=` line in a media description (layered multicast)
 is rejected.
+
+## Lenient parsing
+
+`sdpReader.parse` is strict on purpose. For SDP you only need to read, from peers that do
+not follow RFC 8866 to the letter (old SIP phones, gateways, SBCs, captures), use
+`sdpReader.parseLenient`: it never throws, keeps everything the text allows, and reports
+each deviation as a warning.
+
+```ts
+import {sdpReader, sdpWriter} from '@irbisadm/simple-sdp';
+
+const {sdp, warnings} = sdpReader.parseLenient(
+  'v=0\r\no=- 1 1 IN IP4 192.0.2.1\r\ns=-\r\nt=0 0\r\n' +
+  'm=audio 49170 RTP/AVP 0\r\na=sendrecv\r\nc=IN IP4 192.0.2.1\r\na=setup:client\r\n');
+
+sdp.media[0].connectionInformation;  // {netType: 'IN', addrType: 'IP4', connectionAddress: '192.0.2.1'}
+sdp.media[0].attributes;             // [{name: 'setup', value: 'client'}]
+warnings;
+// [{code: 'out-of-order', reason: 'line is out of order (media order: m i c b k a)',
+//   lineNumber: 7, line: 'c=IN IP4 192.0.2.1', action: 'kept'},
+//  {code: 'malformed-attribute', reason: 'a=setup must be one of active, passive, actpass, holdconn',
+//   lineNumber: 8, line: 'a=setup:client', action: 'generic-attribute'}]
+
+if (sdpReader.isComplete(sdp)) {     // narrows SdpLenient to Sdp
+  sdpWriter.write(sdp);              // RFC 8866 line order: c= before a=
+}
+```
+
+The model is `SdpLenient`: the same as `Sdp`, except that `protocolVersion`, `origin`,
+`sessionName` and `timing` are undefined when their line is missing or unreadable, and a
+media section's `port` and `proto` are undefined when the `m=` line has no readable value
+for them. Nothing is invented: a missing `s=` stays undefined, an unreadable port is never
+reported as `0` (port 0 means a rejected stream). A description that `parse` accepts gives
+`warnings: []` and the same model as `parse`.
+
+Each warning is `{code, reason, lineNumber, line, action}`. `reason` is the text `parse`
+throws for the same problem; for a description that `parse` rejects, the first warning has
+the same `lineNumber` and `reason` as the `SdpParseError`. `lineNumber` is 0 for a missing
+line, and `line` is the offending line as it appears in the input. Warnings are in line
+order; those with `lineNumber` 0 come last (`v`, `o`, `s`, `t`). Each line gets at most one
+warning.
+
+| Code | What lenient mode does | `action` |
+|---|---|---|
+| `empty-line`, `malformed-line` | skips the line (a line of only spaces/tabs is empty) | `skipped` |
+| `unknown-line-type` | skips an unknown `x=` line | `skipped` |
+| `missing-version`, `version-not-first` | the description does not start with `v=` (there is no `v=` before the first `m=` / it comes later); the line is parsed normally | `kept` (`skipped` for an unknown type) |
+| `unsupported-version` | `v=1`: `protocolVersion` is `1` | `kept` |
+| `wrong-scope` | skips a session-only line inside a media description (e.g. `s=` after `m=`) | `skipped` |
+| `out-of-order` | accepts the line into the current scope as if it were in order; `r=`/`z=` attach to the last `t=` | `kept`, `first-kept` for a repeat, `skipped` without any `t=` |
+| `duplicate-line` | keeps the first of a repeated single-occurrence line (`o=`, `s=`, `c=` in one media, …) | `first-kept` |
+| `malformed-value` | malformed `v=`/`o=`/`c=`/`t=`/`b=`/`k=`/`r=`/`z=`: keeps what can be read (an `o=` with six fields keeps them as text, e.g. a non-numeric `sess-id`), otherwise skips | `kept` / `skipped` |
+| `malformed-media` | malformed `m=`: keeps the section so that later lines attach to it; an unreadable port is undefined; for RTP, unreadable payload types go to `formats` as text (they are not written back) | `kept` |
+| `malformed-attribute` | keeps a malformed typed attribute (`a=setup:client`, a broken `a=candidate`, …) as a generic attribute | `generic-attribute` |
+| `duplicate-attribute` | keeps the first of a repeated single-occurrence attribute (`a=mid`, two directions, …); the rest become generic attributes | `generic-attribute` |
+| `missing-mandatory-line` | `o=`, `s=` or `t=` is missing at the end: the field stays undefined | `skipped` |
+| `trailing-whitespace` | removes trailing spaces and tabs (not from the free-text lines `s=`, `i=`, `u=`, `e=`, `p=`, which keep them) | `repaired` |
+
+Lines may also end with a lone CR. A line with trailing whitespace and another problem
+reports only the other problem.
+
+`sdpWriter.write` accepts the lenient model with the usual rules: it throws without
+`origin` or `timing`, and for a media section without `port` or `proto`. Lenient parsing
+plus writing repairs structure: if every warning is `empty-line`, `malformed-line`,
+`unknown-line-type`, `out-of-order`, `wrong-scope`, `duplicate-line` or
+`trailing-whitespace`, and the mandatory lines exist, `parse(write(parseLenient(x).sdp))`
+succeeds. Other warnings keep values as they were (`v=1`, a non-numeric `sess-id`,
+`a=setup:client` as a generic attribute), so the written text is rejected by `parse` again,
+by design.
+
+`sdpValidator.validate(text, {lenient: true})` parses leniently, reports each warning as an
+issue with severity `warning` and code `lenient:<code>` (e.g. `lenient:out-of-order`, with
+`lineNumber`), then runs the other checks on the model.
 
 ## Compatibility
 
@@ -219,6 +293,7 @@ let json = try sdp.parseJSON(offer)                  // Data: the model, key ord
 let issues = try sdp.validate(json: json, type: .offer)
 let text = try sdp.write(json: json)
 let model = try sdp.parse(offer)                     // [String: Any] (does not keep key order)
+let (lenient, warnings) = try sdp.parseLenient(capture) // never throws SdpParseError
 ```
 
 ```kotlin
@@ -226,6 +301,7 @@ val sdp = SimpleSdp()
 val model = sdp.parse(offer)                         // kotlinx.serialization JsonObject
 val issues = sdp.validate(model, SdpType.OFFER)
 val text = sdp.write(model)
+val (lenient, warnings) = sdp.parseLenient(capture)  // never throws SdpParseException
 ```
 
 ### Module interface
@@ -240,6 +316,8 @@ bindings:
 | `sdp_write(ptr, len) → res` | model JSON in; `{"sdp": "text"}` or `{"error": {message}}` |
 | `sdp_validate(ptr, len, type) → res` | SDP text in, `type` 0 = none, 1 = offer, 2 = answer; `{"issues": [...]}` |
 | `sdp_validate_model(ptr, len, type) → res` | model JSON in; `{"issues": [...]}` or `{"error": {message}}` |
+| `sdp_parse_lenient(ptr, len) → res` | `{"sdp": model, "warnings": [{code, reason, lineNumber, line, action}]}`; never an error |
+| `sdp_validate_lenient(ptr, len, type) → res` | like `sdp_validate`, with the text parsed leniently |
 | `sdp_version() → res` | version string |
 | `sdp_len(res) → len` | byte length of a buffer |
 | `sdp_free(ptr)` | release an input buffer or a result |
@@ -253,8 +331,8 @@ wasm in Node.js 1.3 / 1.2 ms (the TypeScript build: 0.35 / 0.25 ms), JVM with th
 module 6 / 9 ms, WasmKit (release build) ≈10 ms each.
 
 The generated ESM bindings (`wasm/build/simple-sdp.js`, published as
-`wasm/dist/simple-sdp.mjs`) take strings: `parse(text)`, `write(json)`, `validate(text, type)`,
-`validateModel(json, type)`.
+`wasm/dist/simple-sdp.mjs`) take strings: `parse(text)`, `parseLenient(text)`, `write(json)`,
+`validate(text, type)`, `validateLenient(text, type)`, `validateModel(json, type)`.
 
 Build: `yarn asbuild` compiles the module and copies it into `platforms/` (the copies are
 committed so that SwiftPM and Gradle builds do not need Node.js).

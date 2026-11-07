@@ -107,6 +107,7 @@ dependencies {
 tasks.test {
     useJUnitPlatform()
     systemProperty("fixtures", rootDir.resolve("../../test/fixtures").absolutePath)
+    systemProperty("lenientFixtures", rootDir.resolve("../../test/fixtures-lenient").absolutePath)
     systemProperty("wasm", wasmFile.absolutePath)
     systemProperty("version", libraryVersion)
 }

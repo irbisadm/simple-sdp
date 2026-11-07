@@ -19,21 +19,23 @@ export class LastParse {
   static error: ParseError | null = null;
 }
 
-const SESSION_LETTERS = 'vosiuepcbtrzka';
-const MEDIA_LETTERS = 'micbka';
-const RANK_T = 9;
-const RANK_R = 10;
-const RANK_Z = 11;
-const ORDER_HINT_SESSION = 'v o s i u e p c b t r z k a';
-const ORDER_HINT_MEDIA = 'm i c b k a';
+export const SESSION_LETTERS = 'vosiuepcbtrzka';
+export const MEDIA_LETTERS = 'micbka';
+export const RANK_T = 9;
+export const RANK_R = 10;
+export const RANK_Z = 11;
+export const ORDER_HINT_SESSION = 'v o s i u e p c b t r z k a';
+export const ORDER_HINT_MEDIA = 'm i c b k a';
 
-function isRepeatable(type: string, media: bool): bool {
+export function isRepeatable(type: string, media: bool): bool {
   return media ? type == 'b' || type == 'a' : type == 'e' || type == 'p' || type == 'b' || type == 'a';
 }
 
 function splitLines(sdp: string): string[] {
   const lines = sdp.split('\n');
-  for (let i = 0; i < lines.length; i++) {
+  // Like `split(/\r?\n/)`: a CR is part of the terminator only before an LF, so the last
+  // segment keeps a trailing CR
+  for (let i = 0; i < lines.length - 1; i++) {
     const line = lines[i];
     if (line.endsWith('\r')) {
       lines[i] = line.slice(0, line.length - 1);

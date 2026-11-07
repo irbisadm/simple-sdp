@@ -9,22 +9,8 @@ import {mLineParser} from "./parsers/m-line.parser";
 import {bLineParser} from "./parsers/b-line.parser";
 import {cLineParser} from "./parsers/c-line.parser";
 import {aLineParser} from "./parsers/a-line.parser";
-
-/**
- * Line order of RFC 8866 §5. Lines with the same rank may repeat only if listed in
- * the corresponding REPEATABLE set. `t=`/`r=`/`z=` (time descriptions) are handled separately.
- */
-const SESSION_ORDER: Record<string, number> = {
-  v: 0, o: 1, s: 2, i: 3, u: 4, e: 5, p: 6, c: 7, b: 8, t: 9, r: 10, z: 11, k: 12, a: 13,
-};
-const SESSION_REPEATABLE = new Set(['e', 'p', 'b', 'a']);
-const MEDIA_ORDER: Record<string, number> = {m: 0, i: 1, c: 2, b: 3, k: 4, a: 5};
-const MEDIA_REPEATABLE = new Set(['b', 'a']);
-
-const ORDER_HINT = {
-  session: 'v o s i u e p c b t r z k a',
-  media: 'm i c b k a',
-};
+import {MEDIA_ORDER, MEDIA_REPEATABLE, ORDER_HINT, SESSION_ORDER, SESSION_REPEATABLE} from "./order";
+import {isComplete, parseLenient} from "./lenient";
 
 /**
  * Parses a session description.
@@ -199,7 +185,9 @@ const isValid = (sdp: string, writeLog = false): boolean => {
 
 const sdpReader = {
   parse,
-  isValid
+  isValid,
+  parseLenient,
+  isComplete,
 }
 
 export {sdpReader}

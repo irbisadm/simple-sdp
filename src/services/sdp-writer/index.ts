@@ -6,6 +6,8 @@ import {
   SdpCommonAttributes,
   SdpConnectionInformation,
   SdpEncryptionKey,
+  SdpLenient,
+  SdpLenientMediaSection,
   SdpMediaSection,
   SdpRid,
   SdpSimulcast,
@@ -77,7 +79,13 @@ const extmap = (s: SdpCommonAttributes): string[] => [
 const generic = (s: SdpCommonAttributes): string[] =>
   (s.attributes ?? []).map(a => a.value === undefined ? `a=${a.name}` : `a=${a.name}:${a.value}`);
 
-const media = (m: SdpMediaSection): string[] => {
+const media = (m: SdpMediaSection | SdpLenientMediaSection): string[] => {
+  if (m.port === undefined) {
+    throw new Error(`media section "${m.type}" has no port`);
+  }
+  if (m.proto === undefined) {
+    throw new Error(`media section "${m.type}" has no proto`);
+  }
   const formats = m.codecs ? m.codecs.map(c => String(c.payloadType)) : m.formats;
   if (!formats || formats.length === 0) {
     throw new Error(`media section "${m.type}" has neither codecs nor formats`);
@@ -120,9 +128,12 @@ const media = (m: SdpMediaSection): string[] => {
  * attributes are emitted in a fixed order (see README, "Writing"), followed by the generic
  * `attributes` in their stored order. Times are written in seconds.
  *
- * @throws Error if a mandatory field is missing (origin, timing, …)
+ * Also accepts the model of `sdpReader.parseLenient`, with the same rules.
+ *
+ * @throws Error if a mandatory field is missing (origin, timing, the port or proto of a
+ *   media section, …)
  */
-const write = (sdp: Sdp): string => {
+const write = (sdp: Sdp | SdpLenient): string => {
   const {origin: o} = sdp;
   if (!o) {
     throw new Error('origin (o=) is required');

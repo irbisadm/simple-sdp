@@ -36,6 +36,9 @@ do {
   output must keep every line as it was.
 - `write(_:)`, `write(json:)` — throws `SdpModelError`
 - `validate(_:type:)`, `validate(model:type:)`, `validate(json:type:)` → `[SdpIssue]`
+- `parseLenientJSON(_:) -> (sdp: Data, warnings: [SdpParseWarning])`, `parseLenient(_:) -> (sdp: [String: Any], warnings: [SdpParseWarning])`
+  — never throw `SdpParseError`; see "Lenient parsing" in the [main README](../../readme.md#lenient-parsing)
+- `validateLenient(_:type:)` → `[SdpIssue]`, with `lenient:<code>` issues for the parse warnings
 
 ## Build
 
