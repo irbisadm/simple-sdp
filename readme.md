@@ -275,8 +275,8 @@ written text, same issues, same error messages.
 
 | Platform | Get it | Runtime |
 |---|---|---|
-| iOS 18+, macOS 15+ | SwiftPM: `.package(url: "https://github.com/irbisadm/simple-sdp.git", from: "1.2.0")`, product `SimpleSdp` ([`platforms/apple`](platforms/apple)) | [WasmKit](https://github.com/swiftwasm/WasmKit) interpreter |
-| Android, JVM 11+ | JitPack: `maven("https://jitpack.io")`, `implementation("com.github.irbisadm:simple-sdp:v1.2.0")` ([`platforms/kotlin`](platforms/kotlin)) | [Chicory](https://chicory.dev), compiled to bytecode at build time |
+| iOS 18+, macOS 15+ | SwiftPM: `.package(url: "https://github.com/irbisadm/simple-sdp.git", from: "1.3.0")`, product `SimpleSdp` ([`platforms/apple`](platforms/apple)) | [WasmKit](https://github.com/swiftwasm/WasmKit) interpreter |
+| Android, JVM 11+ | JitPack: `maven("https://jitpack.io")`, `implementation("com.github.irbisadm:simple-sdp:v1.3.0")` ([`platforms/kotlin`](platforms/kotlin)) | [Chicory](https://chicory.dev), compiled to bytecode at build time |
 | Browser, Node.js | npm: `import {sdpReader} from '@irbisadm/simple-sdp/wasm'` — the API of the main entry point | the JS engine |
 | Other wasm hosts | `simple-sdp.wasm` from [GitHub Releases](https://github.com/irbisadm/simple-sdp/releases) or `@irbisadm/simple-sdp/wasm/simple-sdp.wasm` | any |
 

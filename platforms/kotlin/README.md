@@ -9,7 +9,7 @@ code nor run-time code generation. Runtime dependencies: `chicory:runtime` and
 
 ```kotlin
 // settings.gradle.kts: dependencyResolutionManagement { repositories { maven("https://jitpack.io") } }
-implementation("com.github.irbisadm:simple-sdp:v1.2.0")
+implementation("com.github.irbisadm:simple-sdp:v1.3.0")
 ```
 
 ```kotlin
