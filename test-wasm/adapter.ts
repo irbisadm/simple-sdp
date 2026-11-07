@@ -3,7 +3,8 @@
 import fs from 'fs';
 import path from 'path';
 import {SdpParseError} from '../src/errors';
-import type {Sdp} from '../src/interfaces/Sdp';
+import type {Sdp, SdpLenient, SdpLenientResult} from '../src/interfaces/Sdp';
+import {isComplete} from '../src/services/sdp-reader/lenient';
 import type {SdpIssue, SdpValidateOptions} from '../src/services/sdp-validator';
 
 export * from '../src/interfaces/Sdp';
@@ -17,6 +18,8 @@ interface Exports {
   sdp_free(ptr: number): void;
   sdp_len(ptr: number): number;
   sdp_parse(ptr: number, len: number): number;
+  sdp_parse_lenient(ptr: number, len: number): number;
+  sdp_validate_lenient(ptr: number, len: number, type: number): number;
   sdp_write(ptr: number, len: number): number;
   sdp_validate(ptr: number, len: number, type: number): number;
   sdp_validate_model(ptr: number, len: number, type: number): number;
@@ -59,7 +62,9 @@ const isValid = (sdp: string, writeLog = false): boolean => {
   }
 };
 
-const write = (sdp: Sdp): string => {
+const parseLenient = (sdp: string): SdpLenientResult => call(ex.sdp_parse_lenient, sdp);
+
+const write = (sdp: Sdp | SdpLenient): string => {
   const result = call(ex.sdp_write, JSON.stringify(sdp));
   if (result.error) {
     throw new Error(result.error.message);
@@ -67,9 +72,9 @@ const write = (sdp: Sdp): string => {
   return result.sdp;
 };
 
-const validate = (input: Sdp | string, options: SdpValidateOptions = {}): SdpIssue[] => {
+const validate = (input: Sdp | SdpLenient | string, options: SdpValidateOptions = {}): SdpIssue[] => {
   const result = typeof input === 'string'
-    ? call(ex.sdp_validate, input, typeCode(options.type))
+    ? call(options.lenient ? ex.sdp_validate_lenient : ex.sdp_validate, input, typeCode(options.type))
     : call(ex.sdp_validate_model, JSON.stringify(input), typeCode(options.type));
   if (result.error) {
     throw new Error(result.error.message);
@@ -77,7 +82,7 @@ const validate = (input: Sdp | string, options: SdpValidateOptions = {}): SdpIss
   return result.issues;
 };
 
-export const sdpReader = {parse, isValid};
+export const sdpReader = {parse, isValid, parseLenient, isComplete};
 export const sdpWriter = {write};
 export const sdpValidator = {validate};
 export const version: string = require('../package.json').version;

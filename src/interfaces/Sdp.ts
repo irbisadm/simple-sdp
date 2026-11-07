@@ -312,6 +312,76 @@ interface Sdp extends SdpCommonAttributes {
   media: SdpMediaSection[];
 }
 
+/**
+ * A media section produced by `sdpReader.parseLenient`. Same as {@link SdpMediaSection},
+ * except that fields read from a malformed `m=` line may be missing.
+ *
+ * For a malformed `m=` line of an RTP protocol, payload types that cannot be read
+ * (non-numeric or outside 0-127) are kept as text in `formats`, next to the readable
+ * ones in `codecs`. The writer uses `codecs` when present, so such `formats` are not
+ * written back.
+ */
+interface SdpLenientMediaSection extends Omit<SdpMediaSection, 'port' | 'proto'> {
+  /** Undefined when the port of the `m=` line cannot be read. Never 0 in that case: port 0 means a rejected stream. */
+  port?: number;
+  /** Undefined when the `m=` line has no `<proto>` field */
+  proto?: string;
+}
+
+/**
+ * The model produced by `sdpReader.parseLenient`. Same as {@link Sdp}, except that the
+ * mandatory fields are undefined when their line is missing or cannot be read.
+ * Use `sdpReader.isComplete` to narrow it to {@link Sdp}.
+ */
+interface SdpLenient extends Omit<Sdp, 'protocolVersion' | 'origin' | 'sessionName' | 'timing' | 'media'> {
+  /** `v=`; undefined when missing or not a number. May differ from 0 when `v=` says so. */
+  protocolVersion?: number;
+  origin?: SdpOrigin;
+  sessionName?: string;
+  timing?: SdpTiming[];
+  media: SdpLenientMediaSection[];
+}
+
+/** Stable codes of {@link SdpParseWarning} */
+type SdpParseWarningCode =
+  | 'empty-line'
+  | 'malformed-line'
+  | 'unknown-line-type'
+  | 'missing-version'
+  | 'version-not-first'
+  | 'unsupported-version'
+  | 'wrong-scope'
+  | 'out-of-order'
+  | 'duplicate-line'
+  | 'malformed-value'
+  | 'malformed-media'
+  | 'malformed-attribute'
+  | 'duplicate-attribute'
+  | 'missing-mandatory-line'
+  | 'trailing-whitespace';
+
+/** What `parseLenient` did with the offending line */
+type SdpParseWarningAction = 'kept' | 'skipped' | 'generic-attribute' | 'first-kept' | 'repaired';
+
+/** A deviation from RFC 8866 found by `sdpReader.parseLenient` */
+interface SdpParseWarning {
+  code: SdpParseWarningCode;
+  /** Human-readable; the same text that `sdpReader.parse` throws for the same problem */
+  reason: string;
+  /** 1-based line number, or 0 when the warning is not tied to a line (a missing line) */
+  lineNumber: number;
+  /** The offending line as it appears in the input, without the terminator; '' when `lineNumber` is 0 */
+  line: string;
+  action: SdpParseWarningAction;
+}
+
+/** The result of `sdpReader.parseLenient` */
+interface SdpLenientResult {
+  sdp: SdpLenient;
+  /** In line order; warnings with `lineNumber` 0 come last, in the order v, o, s, t */
+  warnings: SdpParseWarning[];
+}
+
 interface SdpPair {
   offer: Sdp;
   answer: Sdp;
@@ -345,4 +415,10 @@ export {
   SdpTimeZoneAdjustment,
   SdpBandwidthInformation,
   SdpConnectionInformation,
+  SdpLenient,
+  SdpLenientMediaSection,
+  SdpLenientResult,
+  SdpParseWarning,
+  SdpParseWarningCode,
+  SdpParseWarningAction,
 }

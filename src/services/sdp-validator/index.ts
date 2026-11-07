@@ -1,4 +1,4 @@
-import {Sdp, SdpCommonAttributes, SdpMediaSection} from "../../interfaces/Sdp";
+import {Sdp, SdpCommonAttributes, SdpLenient, SdpLenientMediaSection, SdpMediaSection, SdpParseWarningCode} from "../../interfaces/Sdp";
 import {SdpParseError} from "../../errors";
 import {sdpReader} from "../sdp-reader";
 import {isRtpProto} from "../sdp-reader/parsers/m-line.parser";
@@ -30,7 +30,9 @@ type SdpIssueCode =
   | 'extmap-duplicate-id'
   | 'simulcast-unknown-rid'
   | 'rid-unknown-payload-type'
-  | 'ssrc-group-unknown-ssrc';
+  | 'ssrc-group-unknown-ssrc'
+  /** A warning of `sdpReader.parseLenient`, reported with the `lenient` option */
+  | `lenient:${SdpParseWarningCode}`;
 
 interface SdpIssue {
   severity: 'error' | 'warning';
@@ -38,19 +40,25 @@ interface SdpIssue {
   message: string;
   /** Index in `sdp.media`, if the issue belongs to a media section */
   mediaIndex?: number;
-  /** For `parse-error`: the line number reported by the parser (0 if not tied to a line) */
+  /** For `parse-error` and `lenient:*`: the line number reported by the parser (0 if not tied to a line) */
   lineNumber?: number;
 }
 
 interface SdpValidateOptions {
   /** Enables offer/answer specific checks, e.g. `a=setup:actpass` is not allowed in an answer */
   type?: 'offer' | 'answer';
+  /**
+   * Parses a string with `sdpReader.parseLenient` instead of `sdpReader.parse`: every
+   * parse warning becomes a `lenient:<code>` issue with severity `warning`, and the
+   * other checks run on the recovered model.
+   */
+  lenient?: boolean;
 }
 
 /** Payload types 0–34 are statically assigned by RFC 3551 and may be used without rtpmap */
 const MAX_STATIC_PT = 34;
 
-const usesDtls = (m: SdpMediaSection) => /(^|\/)(D?TLS)(\/|$)/.test(m.proto);
+const usesDtls = (m: SdpMediaSection | SdpLenientMediaSection) => /(^|\/)(D?TLS)(\/|$)/.test(m.proto ?? '');
 
 /** Digest length in bytes of the hash functions of the IANA "Hash Function Textual Names" registry (RFC 8122 §5) */
 const HASH_BYTES: Record<string, number> = {
@@ -63,14 +71,28 @@ const HEX_PAIRS = /^[0-9A-Fa-f]{2}(:[0-9A-Fa-f]{2})*$/;
  * violated in practice (RFC 8829, 8839, 8842, 8843, 8851, 8853).
  *
  * A string is parsed first; a parse failure is reported as a single `parse-error` issue
- * (this covers the line-order and mandatory-line rules of RFC 8866 §5).
+ * (this covers the line-order and mandatory-line rules of RFC 8866 §5). With
+ * `{lenient: true}` the string is parsed with `sdpReader.parseLenient` instead: each parse
+ * warning becomes a `lenient:<code>` warning issue and the other checks run on the model.
  * Media sections with port 0 (rejected or bundle-only) are skipped by the ICE/DTLS checks.
  *
  * @returns the issues found, empty if none
  */
-const validate = (input: Sdp | string, options: SdpValidateOptions = {}): SdpIssue[] => {
-  let sdp: Sdp;
-  if (typeof input === 'string') {
+const validate = (input: Sdp | SdpLenient | string, options: SdpValidateOptions = {}): SdpIssue[] => {
+  let sdp: Sdp | SdpLenient;
+  const issues: SdpIssue[] = [];
+  if (typeof input === 'string' && options.lenient) {
+    const result = sdpReader.parseLenient(input);
+    for (const w of result.warnings) {
+      issues.push({
+        severity: 'warning',
+        code: `lenient:${w.code}`,
+        message: new SdpParseError(w.reason, w.lineNumber, w.line).message,
+        lineNumber: w.lineNumber,
+      });
+    }
+    sdp = result.sdp;
+  } else if (typeof input === 'string') {
     try {
       sdp = sdpReader.parse(input);
     } catch (e) {
@@ -83,7 +105,6 @@ const validate = (input: Sdp | string, options: SdpValidateOptions = {}): SdpIss
     sdp = input;
   }
 
-  const issues: SdpIssue[] = [];
   const error = (code: SdpIssueCode, message: string, mediaIndex?: number) =>
     issues.push(mediaIndex === undefined ? {severity: 'error', code, message} : {severity: 'error', code, message, mediaIndex});
   const warning = (code: SdpIssueCode, message: string, mediaIndex?: number) =>
@@ -195,7 +216,7 @@ const validate = (input: Sdp | string, options: SdpValidateOptions = {}): SdpIss
     }
 
     // --- RTP payload types ---
-    if (isRtpProto(m.proto)) {
+    if (isRtpProto(m.proto ?? '')) {
       for (const codec of m.codecs ?? []) {
         if (codec.payloadType > MAX_STATIC_PT && codec.encodingName === undefined) {
           error('missing-rtpmap', `payload type ${codec.payloadType} is dynamic and needs a=rtpmap (RFC 8866 §6.6)`, i);

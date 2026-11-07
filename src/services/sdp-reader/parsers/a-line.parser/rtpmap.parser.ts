@@ -7,9 +7,14 @@ export const rtpmapParser = (codec: SdpCodec, encoding: string) => {
   if (!encodingName || clockRate === undefined || extra.length) {
     throw new Error('expected "<payload type> <encoding name>/<clock rate>[/<encoding parameters>]"');
   }
+  // Read everything before touching the codec, so that a failure leaves it unchanged
+  const rate = stringToIntParser(clockRate, 'clock rate');
+  const parameters = encodingParameters !== undefined
+    ? stringToIntParser(encodingParameters, 'encoding parameters')
+    : undefined;
   codec.encodingName = encodingName;
-  codec.clockRate = stringToIntParser(clockRate, 'clock rate');
-  if (encodingParameters !== undefined) {
-    codec.encodingParameters = stringToIntParser(encodingParameters, 'encoding parameters');
+  codec.clockRate = rate;
+  if (parameters !== undefined) {
+    codec.encodingParameters = parameters;
   }
 }

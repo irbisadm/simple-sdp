@@ -138,6 +138,64 @@ class SimpleSdpTest {
     }
 
     @Test
+    fun `lenient parsing of clean input gives the strict model and no warnings`() {
+        for (file in fixtures) {
+            val text = file.readText()
+            val result = sdp.parseLenient(text)
+            assertEquals(emptyList(), result.warnings, file.name)
+            assertEquals(sdp.parse(text), result.sdp, file.name)
+        }
+    }
+
+    @Test
+    fun `lenient parsing recovers and reports`() {
+        val result = sdp.parseLenient(lines("v=0", "s=-", "o=- 1 1 IN IP4 h", "t=0 0", "m=audio x RTP/AVP 0", "a=sendrecv", "a=setup:client"))
+        assertEquals(
+            listOf(
+                SdpParseWarning("out-of-order", "line is out of order (session order: v o s i u e p c b t r z k a)", 3, "o=- 1 1 IN IP4 h", "kept"),
+                SdpParseWarning("malformed-media", "port \"x\" is not a non-negative integer", 5, "m=audio x RTP/AVP 0", "kept"),
+                SdpParseWarning("malformed-attribute", "a=setup must be one of active, passive, actpass, holdconn", 7, "a=setup:client", "generic-attribute"),
+            ),
+            result.warnings,
+        )
+        val media = result.sdp["media"]!!.jsonArray[0].jsonObject
+        assertEquals(null, media["port"])
+        assertEquals("sendrecv", media["direction"]!!.jsonPrimitive.content)
+        assertEquals("h", result.sdp["origin"]!!.jsonObject["unicastAddress"]!!.jsonPrimitive.content)
+
+        val missing = sdp.parseLenient("")
+        assertEquals(JsonObject(mapOf("media" to kotlinx.serialization.json.JsonArray(emptyList()))), missing.sdp)
+        assertEquals(listOf("missing-version", "missing-mandatory-line", "missing-mandatory-line", "missing-mandatory-line"), missing.warnings.map { it.code })
+
+        val cr = sdp.parseLenient("v=0\ro=- 1 1 IN IP4 h\rs=- \rt=0 0 \r")
+        assertEquals(listOf(SdpParseWarning("trailing-whitespace", "trailing whitespace removed", 4, "t=0 0 ", "repaired")), cr.warnings)
+        assertEquals("- ", cr.sdp["sessionName"]!!.jsonPrimitive.content)
+    }
+
+    @Test
+    fun `lenient fixtures and garbage never fail`() {
+        val lenient = File(System.getProperty("lenientFixtures")).listFiles { f -> f.name.endsWith(".sdp") }!!
+        assertTrue(lenient.size >= 10)
+        for (file in lenient) {
+            assertEquals(1, sdp.parseLenient(file.readText()).sdp["media"]!!.jsonArray.size, file.name)
+        }
+        val random = java.util.Random(7)
+        repeat(200) {
+            val alphabet = "vosmatc= :/\r\n0x\u00fc"
+            val text = buildString { repeat(random.nextInt(200)) { append(alphabet[random.nextInt(alphabet.length)]) } }
+            sdp.parseLenient(text)
+        }
+    }
+
+    @Test
+    fun `lenient validation`() {
+        assertEquals(
+            listOf("lenient:out-of-order", "missing-connection"),
+            sdp.validateLenient(lines("v=0", "s=-", "o=- 1 1 IN IP4 h", "t=0 0", "m=audio 9 RTP/AVP 0")).map { it.code },
+        )
+    }
+
+    @Test
     fun version() {
         assertEquals(System.getProperty("version"), sdp.version)
         assertEquals(JsonPrimitive(0), sdp.parse(lines("v=0", "o=- 1 1 IN IP4 h", "s=-", "t=0 0"))["protocolVersion"])

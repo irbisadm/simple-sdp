@@ -4,6 +4,9 @@
 import * as ts from '../src/index'; // not '../src': jest maps that to the adapter
 import * as wasm from './adapter';
 import {fixtureNames, loadFixture} from '../test/fixtures';
+import {lenientFixtureNames, loadLenientFixture} from '../test/fixtures-lenient';
+import {entryText, reasonMap} from '../test/lenient-reason-map';
+import {garbageInputs} from '../test/lenient-garbage';
 
 type Outcome = {ok: true, value: unknown} | {ok: false, error: string};
 
@@ -93,12 +96,55 @@ const compare = (text: string) => {
   for (const type of [undefined, 'offer', 'answer'] as const) {
     expect(run(() => wasm.sdpValidator.validate(text, {type}))).toEqual(run(() => ts.sdpValidator.validate(text, {type})));
   }
+  compareLenient(text);
   if (tsParse.ok) {
     const model = tsParse.value as ts.Sdp;
     expect(run(() => wasm.sdpWriter.write(model))).toEqual(run(() => ts.sdpWriter.write(model)));
     expect(run(() => wasm.sdpValidator.validate(model, {type: 'answer'}))).toEqual(run(() => ts.sdpValidator.validate(model, {type: 'answer'})));
   }
 };
+
+/** parseLenient, the lenient validator, and writing the lenient model */
+const compareLenient = (text: string) => {
+  const tsResult = run(() => ts.sdpReader.parseLenient(text));
+  expect(tsResult.ok).toBe(true);
+  expect(run(() => wasm.sdpReader.parseLenient(text))).toEqual(tsResult);
+  for (const type of [undefined, 'answer'] as const) {
+    expect(run(() => wasm.sdpValidator.validate(text, {type, lenient: true})))
+      .toEqual(run(() => ts.sdpValidator.validate(text, {type, lenient: true})));
+  }
+  if (tsResult.ok) {
+    const model = (tsResult.value as ts.SdpLenientResult).sdp;
+    expect(run(() => wasm.sdpWriter.write(model))).toEqual(run(() => ts.sdpWriter.write(model)));
+    expect(run(() => wasm.sdpValidator.validate(model))).toEqual(run(() => ts.sdpValidator.validate(model)));
+  }
+};
+
+describe('wasm build matches the TypeScript implementation on lenient inputs', () => {
+  test.each(lenientFixtureNames())('lenient fixture %s', (name) => {
+    compare(loadLenientFixture(name));
+  });
+  test('reason map entries', () => {
+    for (const entry of reasonMap) {
+      compare(entryText(entry));
+    }
+  });
+  test('generated garbage (same seed as the never-throws test)', () => {
+    // The wasm module receives UTF-8, so lone surrogates arrive as U+FFFD: compare on that text
+    const utf8 = (text: string) => new TextDecoder().decode(new TextEncoder().encode(text));
+    for (const text of garbageInputs()) {
+      compareLenient(utf8(text));
+    }
+  });
+  test('CR-only, mixed endings, trailing whitespace', () => {
+    for (const text of [
+      'v=0\ro=- 1 1 IN IP4 h\rs=-\rt=0 0\r', 'v=0\r\no=- 1 1 IN IP4 h\ns=- \rt=0 0\t\r\n', ' \t\r\nv=0 \r\n',
+      'x=1\nv=0\n', 'm=audio 9\nv=0', 'v=0\no=- 1 1 IN IP4 h\ns=-\nt=0 0\nm=audio 9/2/x RTP/AVP 0 1x 300 \na=sendrecv ',
+    ]) {
+      compare(text);
+    }
+  });
+});
 
 describe('wasm build matches the TypeScript implementation', () => {
   test.each(fixtureNames())('fixture %s', (name) => {

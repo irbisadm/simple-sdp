@@ -20,7 +20,7 @@ plugins {
 
 // JitPack (jitpack.yml) builds with its own coordinates: com.github.irbisadm:simple-sdp:<tag>
 group = findProperty("jitpackGroup")?.toString() ?: "dev.irbisadm"
-val libraryVersion = "1.2.1-rc.1" // = package.json version (checked by scripts/sync-wasm.mjs)
+val libraryVersion = "1.3.0" // = package.json version (checked by scripts/sync-wasm.mjs)
 version = findProperty("jitpackVersion")?.toString() ?: libraryVersion
 
 kotlin {
@@ -107,6 +107,7 @@ dependencies {
 tasks.test {
     useJUnitPlatform()
     systemProperty("fixtures", rootDir.resolve("../../test/fixtures").absolutePath)
+    systemProperty("lenientFixtures", rootDir.resolve("../../test/fixtures-lenient").absolutePath)
     systemProperty("wasm", wasmFile.absolutePath)
     systemProperty("version", libraryVersion)
 }

@@ -21,7 +21,11 @@ const MAX_STATIC_PT: f64 = 34;
 
 /** `/(^|\/)(D?TLS)(\/|$)/` */
 function usesDtls(m: MediaSection): bool {
-  const parts = m.proto.split('/');
+  const proto = m.proto;
+  if (proto === null) {
+    return false;
+  }
+  const parts = proto.split('/');
   return parts.includes('TLS') || parts.includes('DTLS');
 }
 
@@ -255,18 +259,19 @@ export function validate(sdp: Sdp, type: string): Issue[] {
       const mfp = m.fingerprints;
       const sfp = sdp.fingerprints;
       if ((mfp === null || mfp.length == 0) && (sfp === null || sfp.length == 0)) {
-        c.error('missing-fingerprint', `a=fingerprint is required for ${m.proto} (RFC 8842 §5.2, §5.3)`, i);
+        c.error('missing-fingerprint', `a=fingerprint is required for ${m.proto!} (RFC 8842 §5.2, §5.3)`, i);
       }
       const setup = m.setup !== null ? m.setup : sdp.setup;
       if (setup === null) {
-        c.error('missing-setup', `a=setup is required for ${m.proto} (RFC 8842 §5.2, §5.3)`, i);
+        c.error('missing-setup', `a=setup is required for ${m.proto!} (RFC 8842 §5.2, §5.3)`, i);
       } else if (type == 'answer' && setup == 'actpass') {
         c.error('setup-actpass-in-answer', 'an answer must use a=setup:active or a=setup:passive (RFC 5763 §5)', i);
       }
     }
 
     // --- RTP payload types ---
-    if (isRtpProto(m.proto)) {
+    const proto = m.proto;
+    if (proto !== null && isRtpProto(proto)) {
       const codecs = m.codecs;
       if (codecs !== null) {
         for (let j = 0; j < codecs.length; j++) {

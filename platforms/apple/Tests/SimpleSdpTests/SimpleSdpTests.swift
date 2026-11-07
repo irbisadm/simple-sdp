@@ -119,7 +119,49 @@ final class SimpleSdpTests: XCTestCase {
         XCTAssertEqual(failures.value, 0)
     }
 
+    func testLenientParsingOfCleanInputGivesTheStrictModel() throws {
+        let names = try FileManager.default.contentsOfDirectory(atPath: fixtures.path).filter { $0.hasSuffix(".sdp") }
+        for name in names {
+            let text = try String(contentsOf: fixtures.appendingPathComponent(name), encoding: .utf8)
+            let (json, warnings) = try sdp.parseLenientJSON(text)
+            XCTAssertEqual(warnings, [], name)
+            XCTAssertEqual(json, try sdp.parseJSON(text), name)
+        }
+    }
+
+    func testLenientParsingRecoversAndReports() throws {
+        let (model, warnings) = try sdp.parseLenient(
+            lines("v=0", "s=-", "o=- 1 1 IN IP4 h", "t=0 0", "m=audio x RTP/AVP 0", "a=sendrecv", "a=setup:client"))
+        XCTAssertEqual(warnings, [
+            SdpParseWarning(code: "out-of-order", reason: "line is out of order (session order: v o s i u e p c b t r z k a)",
+                            lineNumber: 3, line: "o=- 1 1 IN IP4 h", action: "kept"),
+            SdpParseWarning(code: "malformed-media", reason: "port \"x\" is not a non-negative integer",
+                            lineNumber: 5, line: "m=audio x RTP/AVP 0", action: "kept"),
+            SdpParseWarning(code: "malformed-attribute", reason: "a=setup must be one of active, passive, actpass, holdconn",
+                            lineNumber: 7, line: "a=setup:client", action: "generic-attribute"),
+        ])
+        let media = try XCTUnwrap((model["media"] as? [[String: Any]])?.first)
+        XCTAssertNil(media["port"])
+        XCTAssertEqual(media["direction"] as? String, "sendrecv")
+
+        let (empty, missing) = try sdp.parseLenient("")
+        XCTAssertEqual(empty as NSDictionary, ["media": []] as NSDictionary)
+        XCTAssertEqual(missing.map(\.code), ["missing-version", "missing-mandatory-line", "missing-mandatory-line", "missing-mandatory-line"])
+
+        let (cr, crWarnings) = try sdp.parseLenient("v=0\ro=- 1 1 IN IP4 h\rs=- \rt=0 0 \r")
+        XCTAssertEqual(crWarnings, [SdpParseWarning(code: "trailing-whitespace", reason: "trailing whitespace removed",
+                                                    lineNumber: 4, line: "t=0 0 ", action: "repaired")])
+        XCTAssertEqual(cr["sessionName"] as? String, "- ")
+    }
+
+    func testLenientValidation() throws {
+        XCTAssertEqual(
+            try sdp.validateLenient(lines("v=0", "s=-", "o=- 1 1 IN IP4 h", "t=0 0", "m=audio 9 RTP/AVP 0")).map(\.code),
+            ["lenient:out-of-order", "missing-connection"]
+        )
+    }
+
     func testVersion() throws {
-        XCTAssertEqual(try sdp.version(), "1.2.1-rc.1")
+        XCTAssertEqual(try sdp.version(), "1.3.0")
     }
 }
