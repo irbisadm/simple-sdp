@@ -3,6 +3,41 @@
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). The project
 follows [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+A new feature, so the next release is a minor one (1.3.0).
+
+### Added
+- Lenient parsing: `sdpReader.parseLenient(text)` never throws, keeps everything the text
+  allows and returns `{sdp, warnings}`. Each deviation that `parse` rejects becomes a
+  warning `{code, reason, lineNumber, line, action}` with the same `reason` (and, for the
+  first warning, the same line) as the strict error. Trailing spaces/tabs (except on
+  `s=`/`i=`/`u=`/`e=`/`p=`) and CR-only line endings are handled as well. New types
+  `SdpLenient`, `SdpLenientMediaSection`, `SdpLenientResult`, `SdpParseWarning`,
+  `SdpParseWarningCode`, `SdpParseWarningAction`, and the type guard
+  `sdpReader.isComplete(sdp)`. See "Lenient parsing" in the README.
+- `sdpValidator.validate(text, {lenient: true})` reports parse warnings as
+  `lenient:<code>` issues and checks the recovered model. `SdpIssueCode` now includes the
+  `lenient:*` codes (a wider union type).
+- wasm: `sdp_parse_lenient` and `sdp_validate_lenient` (C ABI), `parseLenient` and
+  `validateLenient` (ESM bindings); `@irbisadm/simple-sdp/wasm` has `parseLenient`,
+  `isComplete` and the `lenient` validator option. Swift: `parseLenient(_:)`,
+  `parseLenientJSON(_:)`, `validateLenient(_:type:)`. Kotlin: `parseLenient(sdp)`,
+  `validateLenient(sdp, type)`.
+
+### Changed
+- `sdpWriter.write` accepts `SdpLenient` and throws for a media section without `port` or
+  `proto` (it used to write `m=audio undefined …`).
+- wasm: a model whose media section has no `port` or `proto` is accepted by `sdp_write`
+  and `sdp_validate_model` like in TypeScript (writing fails with the message above);
+  it used to fail with "invalid SDP model".
+
+### Fixed
+- wasm: a description whose last line ends with a lone CR was parsed differently from
+  TypeScript (the CR was dropped); the strict parser now matches TypeScript.
+- A malformed `a=rtpmap` no longer leaves a partially filled codec behind (not visible
+  through `parse`, which throws, but used by lenient parsing).
+
 ## [1.2.1-rc.1] — 2026-11-01
 
 ### Changed

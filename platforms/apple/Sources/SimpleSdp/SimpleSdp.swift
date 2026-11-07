@@ -38,7 +38,7 @@ public struct SdpIssue: Codable, Equatable, Sendable {
     public let message: String
     /// Index in `media`, if the issue belongs to a media section
     public let mediaIndex: Int?
-    /// For `parse-error`: the line number reported by the parser
+    /// For `parse-error` and `lenient:*`: the line number reported by the parser
     public let lineNumber: Int?
 
     public init(severity: String, code: String, message: String, mediaIndex: Int? = nil, lineNumber: Int? = nil) {
@@ -47,6 +47,28 @@ public struct SdpIssue: Codable, Equatable, Sendable {
         self.message = message
         self.mediaIndex = mediaIndex
         self.lineNumber = lineNumber
+    }
+}
+
+/// A deviation from RFC 8866 found by `SimpleSdp.parseLenient`.
+public struct SdpParseWarning: Codable, Equatable, Sendable {
+    /// Stable machine-readable code, e.g. `out-of-order`; the codes are listed in the README
+    public let code: String
+    /// The same text that `parse` reports for the same problem
+    public let reason: String
+    /// 1-based line number, or 0 when the warning is not tied to a line (a missing line)
+    public let lineNumber: Int
+    /// The offending line as it appears in the input, without the terminator; empty when `lineNumber` is 0
+    public let line: String
+    /// What was done with the line: `kept`, `skipped`, `generic-attribute`, `first-kept` or `repaired`
+    public let action: String
+
+    public init(code: String, reason: String, lineNumber: Int, line: String, action: String) {
+        self.code = code
+        self.reason = reason
+        self.lineNumber = lineNumber
+        self.line = line
+        self.action = action
     }
 }
 
@@ -71,7 +93,7 @@ public final class SimpleSdp: @unchecked Sendable {
         let store: Store
         let instance: Instance
         let memory: Memory
-        let alloc, free, len, parse, write, validate, validateModel, version: Function
+        let alloc, free, len, parse, parseLenient, write, validate, validateLenient, validateModel, version: Function
 
         init(module: Module) throws {
             engine = Engine()
@@ -92,6 +114,8 @@ public final class SimpleSdp: @unchecked Sendable {
             free = try function("sdp_free")
             len = try function("sdp_len")
             parse = try function("sdp_parse")
+            parseLenient = try function("sdp_parse_lenient")
+            validateLenient = try function("sdp_validate_lenient")
             write = try function("sdp_write")
             validate = try function("sdp_validate")
             validateModel = try function("sdp_validate_model")
@@ -206,6 +230,41 @@ public final class SimpleSdp: @unchecked Sendable {
         return model
     }
 
+    /// Parses a session description without failing on the SDP: every deviation from
+    /// RFC 8866 that `parse` rejects is reported as a warning, and the model keeps what the
+    /// text allows. Lines may be terminated by CRLF, LF or CR.
+    ///
+    /// The model is the JSON form of the TypeScript `SdpLenient`: like the strict model, but
+    /// `protocolVersion`, `origin`, `sessionName`, `timing` and a media section's `port` and
+    /// `proto` may be absent. Warnings are in line order; those with `lineNumber` 0 come last.
+    ///
+    /// - Throws: only `SimpleSdpRuntimeError` or a runtime trap, never `SdpParseError`
+    public func parseLenientJSON(_ sdp: String) throws -> (sdp: Data, warnings: [SdpParseWarning]) {
+        let result = try call({ $0.parseLenient }, sdp)
+        // {"sdp":<model>,"warnings":[...]} — the model is taken verbatim to keep the key order.
+        // String values escape their quotes, so the last `,"warnings":[` is the envelope's.
+        let prefix = #"{"sdp":"#
+        guard result.hasPrefix(prefix), result.hasSuffix("}"),
+              let split = result.range(of: #","warnings":["#, options: .backwards) else {
+            throw SimpleSdpRuntimeError.unexpectedResult(result)
+        }
+        let model = result[result.index(result.startIndex, offsetBy: prefix.count)..<split.lowerBound]
+        let warnings = result[result.index(before: split.upperBound)..<result.index(before: result.endIndex)]
+        return (
+            Data(model.utf8),
+            try JSONDecoder().decode([SdpParseWarning].self, from: Data(warnings.utf8))
+        )
+    }
+
+    /// `parseLenientJSON` returning the model as a dictionary (see `parse` about key order).
+    public func parseLenient(_ sdp: String) throws -> (sdp: [String: Any], warnings: [SdpParseWarning]) {
+        let (json, warnings) = try parseLenientJSON(sdp)
+        guard let model = try JSONSerialization.jsonObject(with: json) as? [String: Any] else {
+            throw SimpleSdpRuntimeError.unexpectedResult("parseLenient")
+        }
+        return (model, warnings)
+    }
+
     /// True if `parse` accepts the description.
     public func isValid(_ sdp: String) -> Bool {
         (try? parseJSON(sdp)) != nil
@@ -230,6 +289,12 @@ public final class SimpleSdp: @unchecked Sendable {
     /// A parse failure is reported as a single `parse-error` issue.
     public func validate(_ sdp: String, type: SdpType? = nil) throws -> [SdpIssue] {
         try issues(try call({ $0.validate }, sdp, [type?.rawValue ?? 0]))
+    }
+
+    /// `validate` on a description parsed with `parseLenient`: each parse warning becomes a
+    /// `lenient:<code>` issue with severity `warning`, then the other checks run on the model.
+    public func validateLenient(_ sdp: String, type: SdpType? = nil) throws -> [SdpIssue] {
+        try issues(try call({ $0.validateLenient }, sdp, [type?.rawValue ?? 0]))
     }
 
     /// Checks a model, e.g. after modifying it.

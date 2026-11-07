@@ -134,9 +134,11 @@ export class Codec {
 
 export class MediaSection extends CommonAttributes {
   type: string = '';
+  /** NaN only in a lenient model, when the port of the m= line cannot be read */
   port: f64 = ABSENT;
   numberOfPorts: f64 = ABSENT;
-  proto: string = '';
+  /** null only in a lenient model, when the m= line has no <proto> */
+  proto: string | null = null;
   formats: string[] | null = null;
   codecs: Codec[] | null = null;
   rtcpFeedbackWildcard: string[] | null = null;

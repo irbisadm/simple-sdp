@@ -29,6 +29,9 @@ try {
 - `parse(sdp): JsonObject`, `parseToJson(sdp): String`, `isValid(sdp)`
 - `write(model: JsonObject)`, `write(modelJson: String)` — throws `SdpModelException`
 - `validate(sdp: String, type)`, `validate(model: JsonObject, type)`, `validateModel(json, type)` → `List<SdpIssue>`
+- `parseLenient(sdp): SdpLenientResult` (`sdp: JsonObject`, `warnings: List<SdpParseWarning>`) — never throws
+  `SdpParseException`; see "Lenient parsing" in the [main README](../../readme.md#lenient-parsing)
+- `validateLenient(sdp: String, type)` → `List<SdpIssue>`, with `lenient:<code>` issues for the parse warnings
 
 ## Build
 

@@ -5,6 +5,8 @@
 //   write         -> {"sdp": "<text>"} | {"error": {"message"}}
 //   validate      -> {"issues": [...]}
 //   validateModel -> {"issues": [...]} | {"error": {"message"}}
+//   parseLenient  -> {"sdp": <lenient model>, "warnings": [{"code", "reason", "lineNumber", "line", "action"}]}
+//   validateLenient -> {"issues": [...]}
 // <model> has the shape of the TypeScript `Sdp` interface.
 //
 // Two ways to call the module:
@@ -14,11 +16,12 @@
 //        res = sdp_parse(ptr, len); sdp_free(ptr)
 //        read sdp_len(res) bytes at res (UTF-8 JSON); sdp_free(res)
 
-import {LastParse, parse as parseSdp} from './reader';
+import {LastParse, ParseError, parse as parseSdp} from './reader';
+import {parseLenient as parseSdpLenient, Warning} from './reader/lenient';
 import {write as writeSdp} from './writer';
 import {Issue, validate as validateSdp} from './validator';
 import {issuesToJson, sdpFromJson, sdpToJson} from './serialize';
-import {JsonObject, parseJson, quote} from './json';
+import {jsonArray, JsonObject, parseJson, quote} from './json';
 import {resetError, takeError} from './util';
 
 export const VERSION = '1.2.1-rc.1';
@@ -53,6 +56,38 @@ function parseImpl(sdp: string): string {
       .toString() + '}';
   }
   return '{"sdp":' + sdpToJson(result) + '}';
+}
+
+function warningsJson(warnings: Warning[]): string {
+  const items = new Array<string>(warnings.length);
+  for (let i = 0; i < warnings.length; i++) {
+    const w = warnings[i];
+    items[i] = new JsonObject()
+      .str('code', w.code).str('reason', w.reason).num('lineNumber', w.lineNumber).str('line', w.line).str('action', w.action)
+      .toString();
+  }
+  return jsonArray(items);
+}
+
+/** Parses SDP text leniently into the JSON model plus warnings; never fails */
+function parseLenientImpl(sdp: string): string {
+  const result = parseSdpLenient(sdp);
+  return '{"sdp":' + sdpToJson(result.sdp) + ',"warnings":' + warningsJson(result.warnings) + '}';
+}
+
+/** Validates SDP text parsed leniently: parse warnings become `lenient:<code>` issues */
+function validateLenientImpl(sdp: string, type: string | null = null): string {
+  const result = parseSdpLenient(sdp);
+  const issues = new Array<Issue>(0);
+  for (let i = 0; i < result.warnings.length; i++) {
+    const w = result.warnings[i];
+    issues.push(new Issue('warning', 'lenient:' + w.code, new ParseError(w.reason, w.lineNumber, w.line).message, -1, w.lineNumber));
+  }
+  const checks = validateSdp(result.sdp, type === null ? '' : type);
+  for (let i = 0; i < checks.length; i++) {
+    issues.push(checks[i]);
+  }
+  return '{"issues":' + issuesToJson(issues) + '}';
 }
 
 /** True if `parse` accepts the text */
@@ -109,6 +144,16 @@ export function parse(sdp: string): string {
   return done(parseImpl(sdp));
 }
 
+/** Parses SDP text leniently into the JSON model plus warnings */
+export function parseLenient(sdp: string): string {
+  return done(parseLenientImpl(sdp));
+}
+
+/** Validates SDP text parsed leniently. `type`: null | 'offer' | 'answer' */
+export function validateLenient(sdp: string, type: string | null = null): string {
+  return done(validateLenientImpl(sdp, type));
+}
+
 /** Serializes a JSON model into SDP text */
 export function write(model: string): string {
   return done(writeImpl(model));
@@ -163,6 +208,15 @@ function typeName(type: i32): string {
 
 export function sdp_parse(ptr: usize, len: i32): usize {
   return output(parseImpl(input(ptr, len)));
+}
+
+export function sdp_parse_lenient(ptr: usize, len: i32): usize {
+  return output(parseLenientImpl(input(ptr, len)));
+}
+
+/** `type`: 0 = none, 1 = offer, 2 = answer */
+export function sdp_validate_lenient(ptr: usize, len: i32, type: i32): usize {
+  return output(validateLenientImpl(input(ptr, len), typeName(type)));
 }
 
 export function sdp_write(ptr: usize, len: i32): usize {
