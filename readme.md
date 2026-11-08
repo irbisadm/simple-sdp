@@ -120,7 +120,7 @@ section is normalized. Session level: `group`, `ice-lite`, ICE, DTLS, `extmap`, 
 Other normalizations:
 
 - `r=`/`z=` times are written in seconds (`7d` → `604800`);
-- whitespace around `;` in `a=fmtp` is dropped;
+- whitespace around `;` and empty parameters (a trailing `;`) in `a=fmtp` are dropped;
 - `a=ssrc` lines are grouped by SSRC; `a=simulcast` lists `send` before `recv`.
 
 The round-trip test checks every fixture: the lines of each section are the same as in
@@ -173,6 +173,8 @@ a missing final line terminator, RFC 4566-style `z=` after several `t=` lines.
 Known limitation: more than one `c=` line in a media description (layered multicast)
 is rejected.
 
+An `m=` line with an empty field (a doubled space, as in `m=audio 9  RTP/AVP 0`) is rejected.
+
 ## Lenient parsing
 
 `sdpReader.parse` is strict on purpose. For SDP you only need to read, from peers that do
@@ -224,7 +226,7 @@ warning.
 | `out-of-order` | accepts the line into the current scope as if it were in order; `r=`/`z=` attach to the last `t=` | `kept`, `first-kept` for a repeat, `skipped` without any `t=` |
 | `duplicate-line` | keeps the first of a repeated single-occurrence line (`o=`, `s=`, `c=` in one media, …) | `first-kept` |
 | `malformed-value` | malformed `v=`/`o=`/`c=`/`t=`/`b=`/`k=`/`r=`/`z=`: keeps what can be read (an `o=` with six fields keeps them as text, e.g. a non-numeric `sess-id`), otherwise skips | `kept` / `skipped` |
-| `malformed-media` | malformed `m=`: keeps the section so that later lines attach to it; an unreadable port is undefined; for RTP, unreadable payload types go to `formats` as text (they are not written back) | `kept` |
+| `malformed-media` | malformed `m=`: keeps the section so that later lines attach to it; doubled spaces do not shift the fields; an unreadable port is undefined (`m=video 0 RTP/AVP` keeps its port 0, it is a rejected stream); for RTP, unreadable payload types go to `formats` as text (they are not written back) | `kept` |
 | `malformed-attribute` | keeps a malformed typed attribute (`a=setup:client`, a broken `a=candidate`, …) as a generic attribute | `generic-attribute` |
 | `duplicate-attribute` | keeps the first of a repeated single-occurrence attribute (`a=mid`, two directions, …); the rest become generic attributes | `generic-attribute` |
 | `missing-mandatory-line` | `o=`, `s=` or `t=` is missing at the end: the field stays undefined | `skipped` |
@@ -233,8 +235,11 @@ warning.
 Lines may also end with a lone CR. A line with trailing whitespace and another problem
 reports only the other problem.
 
+`sdpReader.isComplete` is true when the mandatory lines exist and every media section has a
+port, a proto and at least one format, so `write` accepts the result.
+
 `sdpWriter.write` accepts the lenient model with the usual rules: it throws without
-`origin` or `timing`, and for a media section without `port` or `proto`. Lenient parsing
+`origin` or `timing`, and for a media section without `port`, `proto` or formats. Lenient parsing
 plus writing repairs structure: if every warning is `empty-line`, `malformed-line`,
 `unknown-line-type`, `out-of-order`, `wrong-scope`, `duplicate-line` or
 `trailing-whitespace`, and the mandatory lines exist, `parse(write(parseLenient(x).sdp))`
@@ -245,6 +250,49 @@ by design.
 `sdpValidator.validate(text, {lenient: true})` parses leniently, reports each warning as an
 issue with severity `warning` and code `lenient:<code>` (e.g. `lenient:out-of-order`, with
 `lineNumber`), then runs the other checks on the model.
+
+## Checked against public SDP sets
+
+The automated tests use the fixtures in this repository. `yarn check:external`
+([`scripts/check-external-sdp`](scripts/check-external-sdp/run.mjs)) also runs the library over
+public collections and captures. It is **not** part of `yarn test`, CI or the release process.
+It downloads the data into `.cache/` at pinned commits; nothing from these sets is in this
+repository, as much of it has a license that does not fit here or none at all. Problems found
+this way are fixed and pinned with hand-made fixtures. Bodies are read from captures with
+`tshark`.
+
+The sets: `.sdp` files of [sdp-transform](https://github.com/clux/sdp-transform),
+[libwebrtc's SDP corpus](https://webrtc.googlesource.com/src/+/main/test/fuzzers/corpora/README)
+(through the [webrtc-sdk](https://github.com/webrtc-sdk/webrtc) mirror) and
+[webrtc-sdp](https://github.com/mozilla/webrtc-sdp); SDP inside the tests of
+[pjproject](https://github.com/pjsip/pjproject), [rtpengine](https://github.com/sipwise/rtpengine)
+and [semantic-sdp-js](https://github.com/medooze/semantic-sdp-js); captures of
+[Wireshark SampleCaptures](https://wiki.wireshark.org/SampleCaptures) (SIP section),
+[goffinet/sip_captures](https://github.com/goffinet/sip_captures),
+[sngrep](https://github.com/irontec/sngrep/tree/master/tests),
+[Wireshark `test/captures`](https://github.com/wireshark/wireshark/tree/master/test/captures) and
+`SIP.pcap` of [Malcolm-Test-Artifacts](https://github.com/idaholab/Malcolm-Test-Artifacts).
+
+Run of 2026-11-08 on 1.3.0 plus the fixes below: 1837 unique descriptions (8703 with repeats).
+Strict mode accepts 1782 and rejects 55. It checks that lenient parsing does not throw and
+agrees with strict mode, that `parse(write(parse(x)))` equals `parse(x)`, that the repair
+property holds, and that the TypeScript and wasm builds give the same results: no violations.
+
+| Problem found in 1.3.0 | Seen as |
+|---|---|
+| Strict mode accepted an empty `<proto>` or non-RTP format in `m=`, and lost the codecs | `m=audio 9  RTP/AVP 0` (constructed from the case below) |
+| Lenient mode shifted the fields of `m=` after a doubled space, or kept `''` in `formats` | `m=audio 29156 RTP/AVP 18  0` in a capture |
+| `isComplete` was true for a section `write` refuses | `m=video 0 RTP/AVP` in captures |
+
+What the run does not show: the 55 rejections were read by reason and sample rather than one
+by one; they break RFC 8866 (line order, missing `t=`, comments in the file, no clock rate in
+`a=rtpmap`, …). A pass over the descriptions with `sdp-transform` as an independent parser was
+done once outside the script and covers only the main fields. Not checked: 25 files of Wireshark
+`test/captures` on which `tshark` did not finish in 60 s (`*_coverage` files of other protocols),
+and one broken link of the wiki. Most of the collections are test data, not captures of devices.
+
+`write` changed one kind of line in this run: `a=fmtp`, where spaces around `;` and a trailing
+`;` are dropped (`a=fmtp:111 a=1; b=2;` becomes `a=1;b=2`). The parameters stay the same.
 
 ## Compatibility
 
