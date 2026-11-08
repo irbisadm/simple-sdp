@@ -74,6 +74,8 @@ describe('lenient fixtures (hand-made, see test/fixtures-lenient/README.md)', ()
     'duplicate-s-line': [[4, 'duplicate-line', 'first-kept']],
     'empty-line-before-media': [[6, 'empty-line', 'skipped']],
     'malformed-m-port': [[6, 'malformed-media', 'kept']],
+    'm-line-double-spaces': [[6, 'malformed-media', 'kept']],
+    'm-line-rejected-no-formats': [[6, 'malformed-media', 'kept']],
     'missing-s-line': [[0, 'missing-mandatory-line', 'skipped']],
     'o-line-first': [[1, 'version-not-first', 'kept']],
     'out-of-order-c-after-a': [[10, 'out-of-order', 'kept']],
@@ -202,6 +204,24 @@ describe('recovery rules', () => {
     expect(media('m=audio 9/2/2 RTP/AVP 0')).toEqual({type: 'audio', proto: 'RTP/AVP', codecs: [{payloadType: 0}]});
     expect(media('m=application 9')).toEqual({type: 'application', port: 9});
     expect(media('m=audio')).toEqual({type: 'audio'});
+  });
+  test('12 doubled spaces in m=: the fields stay in place', () => {
+    const media = (line: string) => lenient(...HEAD, line).sdp.media[0];
+    const audio = {type: 'audio', port: 9, proto: 'RTP/AVP', codecs: [{payloadType: 18}, {payloadType: 0}]};
+    expect(media('m=audio 9 RTP/AVP 18  0')).toEqual(audio);
+    expect(media('m=audio  9 RTP/AVP 18 0')).toEqual(audio);
+    expect(media('m=audio 9  RTP/AVP 18 0')).toEqual(audio);
+    expect(media('m=application  9 UDP/DTLS/SCTP  webrtc-datachannel')).toEqual({
+      type: 'application', port: 9, proto: 'UDP/DTLS/SCTP', formats: ['webrtc-datachannel'],
+    });
+    expect(media('m=')).toEqual({type: ''});
+  });
+  test('12 rejected stream without formats: port 0 is what the line says', () => {
+    const {sdp: model, warnings} = lenient(...HEAD, 'm=video 0 RTP/AVP');
+    expect(short(warnings)).toEqual([[5, 'malformed-media', 'kept']]);
+    expect(model.media[0]).toEqual({type: 'video', port: 0, proto: 'RTP/AVP', codecs: []});
+    expect(sdpReader.isComplete(model)).toBe(false);
+    expect(() => sdpWriter.write(model)).toThrow('media section "video" has neither codecs nor formats');
   });
   test('13 malformed typed attribute: generic attribute with the original value', () => {
     const {sdp: model, warnings} = lenient(...HEAD, M, 'a=setup:client', 'a=setup:active');
@@ -420,6 +440,7 @@ describe('isComplete', () => {
     expect(sdpReader.isComplete(lenient(O, 's=-', 't=0 0').sdp)).toBe(false);
     expect(sdpReader.isComplete(lenient('v=0', 's=-', 't=0 0').sdp)).toBe(false);
     expect(sdpReader.isComplete(lenient(...HEAD, 'm=audio x RTP/AVP 0').sdp)).toBe(false);
+    expect(sdpReader.isComplete(lenient(...HEAD, 'm=audio 9 RTP/AVP').sdp)).toBe(false);
     const {sdp: model} = lenient(...HEAD);
     if (sdpReader.isComplete(model)) {
       const strict: Sdp = model;

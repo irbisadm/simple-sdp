@@ -3,6 +3,25 @@
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). The project
 follows [Semantic Versioning](https://semver.org/).
 
+## [1.4.0] — 2026-11-08
+
+Fixes from running the library over public SDP sets; see "Checked against public SDP sets" in
+the README.
+
+### Added
+- `yarn check:external` runs the library over public collections and captures, downloaded into
+  `.cache/`. It is a manual check, not part of the tests or CI, and none of the data is in this
+  repository.
+
+### Fixed
+- `sdpReader.parse` accepted an `m=` line with an empty media type, proto or non-RTP format
+  (`m=audio 9  RTP/AVP 0` gave `proto: ""` and lost the codecs). It now throws
+  `expected "<media> <port> <proto> <fmt> ..."`. **Strict mode rejects input it used to accept.**
+- `sdpReader.parseLenient`: doubled spaces in a malformed `m=` line shifted the fields
+  (`m=audio  9 RTP/AVP 0` gave `proto: "9"` and no port) or left `''` in `formats`.
+- `sdpReader.isComplete` is false for a media section without formats (`m=video 0 RTP/AVP`),
+  which `sdpWriter.write` refuses.
+
 ## [1.3.0] — 2026-11-07
 
 ### Added

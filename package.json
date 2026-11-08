@@ -1,6 +1,6 @@
 {
   "name": "@irbisadm/simple-sdp",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "license": "MIT",
   "description": "Parse, modify, write and validate SDP (RFC 8866) for WebRTC and SIP. Typed ICE, DTLS, BUNDLE, simulcast, codecs. Zero dependencies.",
   "author": {
@@ -80,6 +80,7 @@
     "asbuild": "asc --config asconfig.json --target release && node scripts/sync-wasm.mjs",
     "asbuild:debug": "asc --config asconfig.json --target debug",
     "test:wasm": "jest -c jest.wasm.config.js && node test-wasm/npm-entry.mjs",
+    "check:external": "node scripts/check-external-sdp/run.mjs",
     "prepack": "yarn asbuild && yarn build"
   }
 }

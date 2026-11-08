@@ -21,7 +21,7 @@ const parseLenient = (sdp) => JSON.parse(rawParseLenient(sdp));
 const isComplete = (sdp) =>
   sdp.protocolVersion !== undefined && sdp.origin !== undefined && sdp.sessionName !== undefined &&
   sdp.timing !== undefined && sdp.timing.length > 0 &&
-  sdp.media.every(m => m.port !== undefined && m.proto !== undefined);
+  sdp.media.every(m => m.port !== undefined && m.proto !== undefined && Boolean(m.codecs?.length || m.formats?.length));
 
 const isValid = (sdp, writeLog = false) => {
   try {

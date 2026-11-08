@@ -101,6 +101,11 @@ export function mLineParser(value: string): MediaSection | null {
     }
   }
   const fmt = parts.slice(3);
+  // A doubled space makes an empty field. For RTP an empty payload type fails below.
+  if (parts[0].length == 0 || parts[2].length == 0 || (!isRtpProto(parts[2]) && fmt.includes(''))) {
+    fail('expected "<media> <port> <proto> <fmt> ..."');
+    return null;
+  }
   if (isRtpProto(parts[2])) {
     const codecs = new Array<Codec>(0);
     for (let i = 0; i < fmt.length; i++) {

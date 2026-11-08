@@ -340,6 +340,22 @@ export const reasonMap: ReasonMapEntry[] = [
     action: 'kept',
   },
   {
+    name: 'm= with an empty proto',
+    lines: ['v=0', 'o=- 1 1 IN IP4 h', 's=-', 't=0 0', 'm=audio 9  RTP/AVP 0'],
+    lineNumber: 5,
+    reason: 'expected "<media> <port> <proto> <fmt> ..."',
+    code: 'malformed-media',
+    action: 'kept',
+  },
+  {
+    name: 'non-RTP m= with an empty format',
+    lines: ['v=0', 'o=- 1 1 IN IP4 h', 's=-', 't=0 0', 'm=application 9 UDP/DTLS/SCTP  webrtc-datachannel'],
+    lineNumber: 5,
+    reason: 'expected "<media> <port> <proto> <fmt> ..."',
+    code: 'malformed-media',
+    action: 'kept',
+  },
+  {
     name: 'm= bad port',
     lines: ['v=0', 'o=- 1 1 IN IP4 h', 's=-', 't=0 0', 'm=audio x RTP/AVP 0'],
     lineNumber: 5,

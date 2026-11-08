@@ -4,6 +4,9 @@ dist
 coverage
 *.tgz
 
+# Public SDP sets downloaded by scripts/check-external-sdp; never committed
+.cache/
+
 # IDE
 .idea/
 *.iml
