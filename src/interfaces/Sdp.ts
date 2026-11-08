@@ -331,7 +331,8 @@ interface SdpLenientMediaSection extends Omit<SdpMediaSection, 'port' | 'proto'>
 /**
  * The model produced by `sdpReader.parseLenient`. Same as {@link Sdp}, except that the
  * mandatory fields are undefined when their line is missing or cannot be read.
- * Use `sdpReader.isComplete` to narrow it to {@link Sdp}.
+ * Use `sdpReader.isComplete` to narrow it to {@link Sdp}; it also requires every media
+ * section to have a format, so that the writer accepts the result.
  */
 interface SdpLenient extends Omit<Sdp, 'protocolVersion' | 'origin' | 'sessionName' | 'timing' | 'media'> {
   /** `v=`; undefined when missing or not a number. May differ from 0 when `v=` says so. */

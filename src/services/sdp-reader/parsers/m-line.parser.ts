@@ -23,6 +23,10 @@ export const mLineParser = (value: string): SdpMediaSection => {
   if (numberOfPorts !== undefined) {
     section.numberOfPorts = stringToIntParser(numberOfPorts, 'number of ports');
   }
+  // A doubled space makes an empty field. For RTP an empty payload type fails below.
+  if (type.length === 0 || proto.length === 0 || (!isRtpProto(proto) && fmt.includes(''))) {
+    throw new Error('expected "<media> <port> <proto> <fmt> ..."');
+  }
   if (isRtpProto(proto)) {
     section.codecs = fmt.map(pt => {
       const payloadType = stringToIntParser(pt, 'payload type');

@@ -199,6 +199,7 @@ describe('wasm build matches on targeted lines', () => {
   const media = ['m=video 9 UDP/TLS/RTP/SAVPF 96 97 0', 'c=IN IP4 0.0.0.0'];
   const LINES = [
     // m=, c=, b=, k=, t=, r=, z=, o=
+    'm=audio  9 RTP/AVP 0', 'm=audio 9  RTP/AVP 0', 'm=audio 9 RTP/AVP 18  0', 'm= 9 RTP/AVP 0', 'm=application 9 X  y', 'm=video 0 RTP/AVP',
     'm=audio 9/2 RTP/AVP 0', 'm=audio 9/2/3 RTP/AVP 0', 'm=audio 9/x RTP/AVP 0', 'm=audio 9 RTP/AVP 128', 'm=audio 9 RTP/AVP',
     'm=application 9 UDP/DTLS/SCTP webrtc-datachannel', 'm=audio 9 TCP/RTP/AVP 0', 'm=audio 9 RTP 0', 'm=audio 9 XRTP/AVP 0',
     'c=IN IP4', 'c=IN IP4 224.2.1.1/127/3', 'b=AS:x', 'b=:5', 'b=AS', 'b=TIAS:64000', 'k=', 'k=:x', 'k=clear:a:b', 'k=prompt',

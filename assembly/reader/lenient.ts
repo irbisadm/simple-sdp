@@ -143,9 +143,16 @@ function mediaSection(value: string, st: LineState): MediaSection {
     return parsed;
   }
   st.outcome('malformed-media', takeError(), 'kept');
-  const parts = value.split(' ');
+  // Doubled spaces are seen in real traffic: without them the fields stay in place
+  const all = value.split(' ');
+  const parts = new Array<string>(0);
+  for (let i = 0; i < all.length; i++) {
+    if (all[i].length > 0) {
+      parts.push(all[i]);
+    }
+  }
   const section = new MediaSection();
-  section.type = parts[0];
+  section.type = parts.length > 0 ? parts[0] : '';
   if (parts.length > 1) {
     const ports = parts[1].split('/');
     if (ports.length <= 2 && isDigits(ports[0])) {

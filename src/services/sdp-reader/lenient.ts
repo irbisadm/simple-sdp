@@ -390,7 +390,8 @@ const mediaSection = (value: string, outcome: Outcome): SdpLenientMediaSection =
   } catch (e) {
     outcome('malformed-media', errorMessage(e), 'kept');
   }
-  const [type, portPart, proto, ...fmt] = value.split(' ');
+  // Doubled spaces are seen in real traffic: without them the fields stay in place
+  const [type = '', portPart, proto, ...fmt] = value.split(' ').filter(part => part.length > 0);
   const section: SdpLenientMediaSection = {type};
   if (portPart !== undefined) {
     const ports = portPart.split('/');
@@ -419,8 +420,11 @@ const mediaSection = (value: string, outcome: Outcome): SdpLenientMediaSection =
   return section;
 }
 
-/** True if the lenient model has every mandatory field, i.e. it is a valid {@link Sdp} */
+/**
+ * True if the lenient model has every mandatory field, including at least one format in
+ * each media section, i.e. it is a valid {@link Sdp} that `sdpWriter.write` accepts.
+ */
 export const isComplete = (sdp: SdpLenient | Sdp): sdp is Sdp =>
   sdp.protocolVersion !== undefined && sdp.origin !== undefined && sdp.sessionName !== undefined &&
   sdp.timing !== undefined && sdp.timing.length > 0 &&
-  sdp.media.every(m => m.port !== undefined && m.proto !== undefined);
+  sdp.media.every(m => m.port !== undefined && m.proto !== undefined && Boolean(m.codecs?.length || m.formats?.length));
