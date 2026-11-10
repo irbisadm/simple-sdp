@@ -1,6 +1,6 @@
 {
   "name": "@irbisadm/simple-sdp",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "license": "MIT",
   "description": "Parse, modify, write and validate SDP (RFC 8866) for WebRTC and SIP. Typed ICE, DTLS, BUNDLE, simulcast, codecs. Zero dependencies.",
   "author": {

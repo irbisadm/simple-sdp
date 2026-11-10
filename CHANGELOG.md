@@ -3,7 +3,7 @@
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). The project
 follows [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [1.5.0] — 2026-11-10
 
 ### Added
 - `sdpResolver.resolve(sdp)`: the effective view of a model (strict or lenient) — what applies

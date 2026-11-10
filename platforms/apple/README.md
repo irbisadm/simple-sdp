@@ -7,7 +7,7 @@ written in Swift: no JIT, App Store compatible.
 
 ```swift
 // Package.swift
-.package(url: "https://github.com/irbisadm/simple-sdp.git", from: "1.4.0")
+.package(url: "https://github.com/irbisadm/simple-sdp.git", from: "1.5.0")
 // target dependency: .product(name: "SimpleSdp", package: "simple-sdp")
 ```
 
