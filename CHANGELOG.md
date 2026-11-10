@@ -3,6 +3,26 @@
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). The project
 follows [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+- `sdpResolver.resolve(sdp)`: the effective view of a model (strict or lenient) — what applies
+  to each media section. Session-level direction, ICE, DTLS and `a=extmap` are inherited; static
+  payload types get their RFC 3551 names (`static: true`); `a=rtcp-fb:*` is added to every
+  codec; RFC 6904 encrypted header extensions are unwrapped; `a=rtpmap` without a clock rate and
+  `a=setup` with a value outside RFC 4145, kept by lenient parsing as generic attributes, are
+  still read. New types `SdpResolved`, `SdpResolvedMediaSection`, `SdpResolvedCodec`,
+  `SdpResolvedExtmap`.
+- `sdpNegotiator.negotiate(offer, answer)`: RFC 3264 offer/answer per media section of the
+  answer — agreed codecs and extensions, directions, hold, the matching offer section, and the
+  answer's BUNDLE group. New types `SdpNegotiation`, `SdpNegotiatedMediaSection`.
+- Both run in the wasm build too: `sdp_resolve` and `sdp_negotiate` (C ABI), `resolve` and
+  `negotiate` (ESM bindings), `sdpResolver` and `sdpNegotiator` in `@irbisadm/simple-sdp/wasm`,
+  `resolve` and `negotiate` in the Swift and Kotlin packages. The differential test compares
+  them with the TypeScript code.
+
+The logic comes from `@irbisadm/sip-pcap`, which used it on top of this library.
+
 ## [1.4.0] — 2026-11-08
 
 Fixes from running the library over public SDP sets; see "Checked against public SDP sets" in

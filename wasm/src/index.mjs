@@ -2,7 +2,8 @@
 // (assembly/). Published as wasm/dist/index.mjs next to simple-sdp.mjs and simple-sdp.wasm.
 import {
   parse as rawParse, parseLenient as rawParseLenient, write as rawWrite, validate as rawValidate,
-  validateLenient as rawValidateLenient, validateModel as rawValidateModel, VERSION,
+  validateLenient as rawValidateLenient, validateModel as rawValidateModel, resolve as rawResolve,
+  negotiate as rawNegotiate, VERSION,
 } from './simple-sdp.mjs';
 import {SdpParseError} from '../../dist/index.mjs';
 
@@ -54,7 +55,25 @@ const validate = (input, options = {}) => {
   return result.issues;
 };
 
+const resolve = (sdp) => {
+  const result = JSON.parse(rawResolve(JSON.stringify(sdp)));
+  if (result.error) {
+    throw new Error(result.error.message);
+  }
+  return result.resolved;
+};
+
+const negotiate = (offer, answer) => {
+  const result = JSON.parse(rawNegotiate(JSON.stringify(offer), JSON.stringify(answer)));
+  if (result.error) {
+    throw new Error(result.error.message);
+  }
+  return result.negotiation;
+};
+
 export const sdpReader = {parse, isValid, parseLenient, isComplete};
 export const sdpWriter = {write};
 export const sdpValidator = {validate};
+export const sdpResolver = {resolve};
+export const sdpNegotiator = {negotiate};
 export const version = VERSION.value;

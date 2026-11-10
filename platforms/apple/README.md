@@ -39,6 +39,10 @@ do {
 - `parseLenientJSON(_:) -> (sdp: Data, warnings: [SdpParseWarning])`, `parseLenient(_:) -> (sdp: [String: Any], warnings: [SdpParseWarning])`
   — never throw `SdpParseError`; see "Lenient parsing" in the [main README](../../readme.md#lenient-parsing)
 - `validateLenient(_:type:)` → `[SdpIssue]`, with `lenient:<code>` issues for the parse warnings
+- `resolve(_:)`, `resolve(json:)` → `[String: Any]` (the shape of `SdpResolved`);
+  `negotiate(offer:answer:)`, `negotiate(offerJSON:answerJSON:)` → `[String: Any]` (the shape of
+  `SdpNegotiation`) — throw `SdpModelError`; see "Resolve and negotiate" in the
+  [main README](../../readme.md#resolve-and-negotiate)
 
 ## Build
 

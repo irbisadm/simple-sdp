@@ -161,6 +161,30 @@ final class SimpleSdpTests: XCTestCase {
         )
     }
 
+    func testResolveAndNegotiate() throws {
+        let head = ["v=0", "o=- 1 1 IN IP4 h", "s=-", "t=0 0"]
+        let (offer, _) = try sdp.parseLenient((head + ["a=group:BUNDLE a", "m=audio 4000 RTP/AVP 0 96", "a=mid:a",
+            "a=rtpmap:96 telephone-event/8000"]).joined(separator: "\r\n") + "\r\n")
+        let (answer, _) = try sdp.parseLenient((head + ["m=audio 5000 RTP/AVP 96 8", "a=mid:a", "a=sendonly",
+            "a=rtpmap:96 telephone-event/8000"]).joined(separator: "\r\n") + "\r\n")
+
+        let media = try XCTUnwrap(try sdp.resolve(offer)["media"] as? [[String: Any]])
+        let pcmu = try XCTUnwrap((media[0]["codecs"] as? [[String: Any]])?.first)
+        XCTAssertEqual(pcmu["encodingName"] as? String, "PCMU")
+        XCTAssertEqual(pcmu["static"] as? Bool, true)
+
+        let negotiation = try sdp.negotiate(offer: offer, answer: answer)
+        XCTAssertEqual((negotiation["bundle"] as? [String])?.count, 0)
+        let section = try XCTUnwrap((negotiation["media"] as? [[String: Any]])?.first)
+        XCTAssertEqual((section["codecs"] as? [[String: Any]])?.compactMap { $0["encodingName"] as? String }, ["telephone-event"])
+        XCTAssertEqual(section["answerDirection"] as? String, "sendonly")
+        XCTAssertEqual(section["hold"] as? Bool, true)
+
+        XCTAssertThrowsError(try sdp.negotiate(offerJSON: Data("{}".utf8), answerJSON: Data("[]".utf8))) { error in
+            XCTAssertTrue(error is SdpModelError)
+        }
+    }
+
     func testVersion() throws {
         XCTAssertEqual(try sdp.version(), "1.4.0")
     }

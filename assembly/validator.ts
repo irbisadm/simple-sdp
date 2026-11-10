@@ -46,7 +46,7 @@ function hashBytes(name: string): i32 {
  * hex pairs, and to hash names compared with ASCII names (no non-ASCII character lowercases
  * to one of their letters), and it keeps the Unicode case tables out of the module.
  */
-function asciiCase(s: string, upper: bool): string {
+export function asciiCase(s: string, upper: bool): string {
   let out = s;
   for (let i = 0; i < s.length; i++) {
     const c = s.charCodeAt(i);

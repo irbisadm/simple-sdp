@@ -117,7 +117,18 @@ const compareLenient = (text: string) => {
     const model = (tsResult.value as ts.SdpLenientResult).sdp;
     expect(run(() => wasm.sdpWriter.write(model))).toEqual(run(() => ts.sdpWriter.write(model)));
     expect(run(() => wasm.sdpValidator.validate(model))).toEqual(run(() => ts.sdpValidator.validate(model)));
+    compareResolve(model);
   }
+};
+
+/** resolve, and negotiate of the model with itself */
+const compareResolve = (model: ts.Sdp | ts.SdpLenient) => {
+  expect(run(() => wasm.sdpResolver.resolve(model))).toEqual(run(() => ts.sdpResolver.resolve(model)));
+  compareNegotiate(model, model);
+};
+
+const compareNegotiate = (offer: ts.Sdp | ts.SdpLenient, answer: ts.Sdp | ts.SdpLenient) => {
+  expect(run(() => wasm.sdpNegotiator.negotiate(offer, answer))).toEqual(run(() => ts.sdpNegotiator.negotiate(offer, answer)));
 };
 
 describe('wasm build matches the TypeScript implementation on lenient inputs', () => {
@@ -154,8 +165,13 @@ describe('wasm build matches the TypeScript implementation', () => {
   test.each(fixtureNames())('mutations of %s', (name) => {
     const text = loadFixture(name);
     const rnd = prng(name.split('').reduce((h, c) => (h * 31 + c.charCodeAt(0)) | 0, 7));
+    const base = ts.sdpReader.parseLenient(text).sdp;
     for (let i = 0; i < 300; i++) {
-      compare(mutate(text, rnd));
+      const mutated = mutate(text, rnd);
+      compare(mutated);
+      const model = ts.sdpReader.parseLenient(mutated).sdp;
+      compareNegotiate(base, model);
+      compareNegotiate(model, base);
     }
   });
 
@@ -189,6 +205,33 @@ describe('wasm build matches the TypeScript implementation', () => {
       expect(run(() => wasm.sdpWriter.write(model))).toEqual(run(() => ts.sdpWriter.write(model)));
       for (const type of [undefined, 'offer', 'answer'] as const) {
         expect(run(() => wasm.sdpValidator.validate(model, {type}))).toEqual(run(() => ts.sdpValidator.validate(model, {type})));
+      }
+    }
+  });
+});
+
+describe('wasm build matches on resolve and negotiate', () => {
+  const head = ['v=0', 'o=- 1 1 IN IP4 127.0.0.1', 's=-', 't=0 0'];
+  const text = (...l: string[]) => [...head, ...l].join('\r\n') + '\r\n';
+  const CASES = [
+    text('m=audio 4000 RTP/AVP 0 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 25 26 28 31 32 33 34 35 96'),
+    text('m=audio 4000 RTP/AVP 96 97 98', 'a=rtpmap:96 telephone-event', 'a=rtpmap:97 x/8000/2/1', 'a=rtpmap:97 y/8000',
+      'a=rtpmap: 98  z/abc/2', 'a=rtpmap:98 w'),
+    text('m=video 4000 RTP/AVPF 96 97', 'a=rtpmap:96 VP8/90000', 'a=rtcp-fb:96 nack', 'a=rtcp-fb:* nack', 'a=rtcp-fb:* ccm fir'),
+    text('a=extmap:1 urn:a', 'a=extmap:2 urn:ietf:params:rtp-hdrext:encrypt urn:b x  y',
+      'm=audio 4000 RTP/SAVP 0', 'a=extmap:2/recvonly urn:ietf:params:rtp-hdrext:encrypt urn:c', 'a=extmap:3 urn:ietf:params:rtp-hdrext:encrypt'),
+    text('a=setup:client', 'a=ice-ufrag:s', 'a=fingerprint:sha-1 AA', 'a=inactive',
+      'm=audio 4000 RTP/AVP 0', 'm=audio 0 RTP/AVP 0', 'a=setup', 'a=setup:server', 'm=audio x RTP/AVP 0', 'a=recvonly'),
+    text('a=group:BUNDLE b', 'a=group:BUNDLE a', 'm=audio 4000 RTP/AVP 0', 'a=mid:a', 'm=audio 4000 RTP/AVP 8', 'a=mid:b'),
+    text('m=application 9 UDP/DTLS/SCTP webrtc-datachannel', 'm=audio 4000 RTP/AVP 97', 'a=rtpmap:97 OPUS/48000/2'),
+    text('m=audio 4000 RTP/AVP 97', 'a=rtpmap:97 Opus/48000/2', 'a=mid:b', 'm=audio 4002 RTP/AVP 0', 'a=mid:a'),
+  ];
+  test('each case, and every pair', () => {
+    const models = CASES.map(c => ts.sdpReader.parseLenient(c).sdp);
+    for (const model of models) {
+      compareResolve(model);
+      for (const other of models) {
+        compareNegotiate(model, other);
       }
     }
   });

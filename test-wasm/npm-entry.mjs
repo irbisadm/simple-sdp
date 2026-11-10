@@ -43,6 +43,8 @@ for (const text of lenientTexts) {
   assert.deepEqual(plain(wasm.sdpReader.parseLenient(text)), plain(result), JSON.stringify(text));
   assert.equal(wasm.sdpReader.isComplete(result.sdp), ts.sdpReader.isComplete(result.sdp));
   assert.deepEqual(wasm.sdpValidator.validate(text, {lenient: true}), ts.sdpValidator.validate(text, {lenient: true}));
+  assert.deepEqual(plain(wasm.sdpResolver.resolve(result.sdp)), plain(ts.sdpResolver.resolve(result.sdp)));
+  assert.deepEqual(plain(wasm.sdpNegotiator.negotiate(result.sdp, result.sdp)), plain(ts.sdpNegotiator.negotiate(result.sdp, result.sdp)));
 }
 assert.deepEqual(outcome(() => wasm.sdpWriter.write({media: []})), outcome(() => ts.sdpWriter.write({media: []})));
 assert.equal(wasm.version, ts.version);

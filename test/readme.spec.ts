@@ -1,4 +1,4 @@
-import {sdpReader, sdpWriter, sdpValidator, SdpParseError} from '../src';
+import {sdpReader, sdpWriter, sdpValidator, sdpResolver, sdpNegotiator, SdpParseError} from '../src';
 import {loadFixture} from './fixtures';
 
 // Keeps the examples in readme.md honest.
@@ -62,5 +62,19 @@ describe('readme: lenient parsing', () => {
       const text = sdpWriter.write(sdp);
       expect(text).toContain('m=audio 49170 RTP/AVP 0\r\nc=IN IP4 192.0.2.1\r\na=sendrecv\r\na=setup:client\r\n');
     }
+  });
+});
+
+describe('readme: resolve and negotiate', () => {
+  test('Polycom offer, FreeSWITCH answer', () => {
+    const offer = sdpReader.parseLenient(loadFixture('sip-polycom-soundpoint-offer')).sdp;
+    const answer = sdpReader.parseLenient(loadFixture('sip-freeswitch-answer')).sdp;
+    const [audio] = sdpResolver.resolve(offer).media;
+    expect(audio.direction).toBe('sendrecv');
+    expect(offer.media[0].direction).toBeUndefined();
+    expect(audio.codecs[2]).toEqual({payloadType: 18, encodingName: 'G729', clockRate: 8000, parameters: {annexb: 'no'}});
+    const [agreed] = sdpNegotiator.negotiate(offer, answer).media;
+    expect(agreed.codecs.map(c => `${c.payloadType} ${c.encodingName}`)).toEqual(['0 PCMU', '101 telephone-event']);
+    expect(agreed.hold).toBe(false);
   });
 });

@@ -68,8 +68,7 @@ function commonJson(o: JsonObject, s: CommonAttributes): void {
   if (fingerprints !== null) {
     const items = new Array<string>(fingerprints.length);
     for (let i = 0; i < fingerprints.length; i++) {
-      items[i] = new JsonObject()
-        .str('hashFunction', fingerprints[i].hashFunction).str('fingerprint', fingerprints[i].fingerprint).toString();
+      items[i] = fingerprintJson(fingerprints[i]);
     }
     o.raw('fingerprints', jsonArray(items));
   }
@@ -78,9 +77,7 @@ function commonJson(o: JsonObject, s: CommonAttributes): void {
   if (extmap !== null) {
     const items = new Array<string>(extmap.length);
     for (let i = 0; i < extmap.length; i++) {
-      const e = extmap[i];
-      items[i] = new JsonObject()
-        .num('id', e.id).optStr('direction', e.direction).str('uri', e.uri).optStr('attributes', e.attributes).toString();
+      items[i] = extmapObject(extmap[i]).toString();
     }
     o.raw('extmap', jsonArray(items));
   }
@@ -95,7 +92,16 @@ function commonJson(o: JsonObject, s: CommonAttributes): void {
   }
 }
 
-function codecJson(c: Codec): string {
+export function fingerprintJson(f: Fingerprint): string {
+  return new JsonObject().str('hashFunction', f.hashFunction).str('fingerprint', f.fingerprint).toString();
+}
+
+export function extmapObject(e: Extmap): JsonObject {
+  return new JsonObject().num('id', e.id).optStr('direction', e.direction).str('uri', e.uri).optStr('attributes', e.attributes);
+}
+
+/** The codec fields; the caller may add more before `toString()` */
+export function codecObject(c: Codec): JsonObject {
   const o = new JsonObject()
     .num('payloadType', c.payloadType)
     .optStr('encodingName', c.encodingName)
@@ -109,7 +115,7 @@ function codecJson(c: Codec): string {
   if (feedback !== null) {
     o.raw('rtcpFeedback', strArray(feedback));
   }
-  return o.toString();
+  return o;
 }
 
 function candidateJson(c: Candidate): string {
@@ -141,7 +147,7 @@ function mediaJson(m: MediaSection): string {
   if (codecs !== null) {
     const items = new Array<string>(codecs.length);
     for (let i = 0; i < codecs.length; i++) {
-      items[i] = codecJson(codecs[i]);
+      items[i] = codecObject(codecs[i]).toString();
     }
     o.raw('codecs', jsonArray(items));
   }

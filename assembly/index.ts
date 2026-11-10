@@ -7,6 +7,8 @@
 //   validateModel -> {"issues": [...]} | {"error": {"message"}}
 //   parseLenient  -> {"sdp": <lenient model>, "warnings": [{"code", "reason", "lineNumber", "line", "action"}]}
 //   validateLenient -> {"issues": [...]}
+//   resolve       -> {"resolved": <SdpResolved>}       | {"error": {"message"}}
+//   negotiate     -> {"negotiation": <SdpNegotiation>} | {"error": {"message"}}
 // <model> has the shape of the TypeScript `Sdp` interface.
 //
 // Two ways to call the module:
@@ -17,12 +19,14 @@
 //        read sdp_len(res) bytes at res (UTF-8 JSON); sdp_free(res)
 
 import {LastParse, ParseError, parse as parseSdp} from './reader';
+import {Sdp} from './model';
 import {parseLenient as parseSdpLenient, Warning} from './reader/lenient';
 import {write as writeSdp} from './writer';
 import {Issue, validate as validateSdp} from './validator';
 import {issuesToJson, sdpFromJson, sdpToJson} from './serialize';
+import {negotiateJson, resolveJson} from './resolver';
 import {jsonArray, JsonObject, parseJson, quote} from './json';
-import {resetError, takeError} from './util';
+import {failed, resetError, takeError} from './util';
 
 export const VERSION = '1.4.0';
 
@@ -139,6 +143,36 @@ function validateModelImpl(model: string, type: string | null = null): string {
   return '{"issues":' + issuesToJson(validateSdp(sdp, type === null ? '' : type)) + '}';
 }
 
+/** The model of a JSON text; null and a pending error if it is not a valid model */
+function modelFrom(model: string): Sdp | null {
+  const json = parseJson(model);
+  return json === null || failed() ? null : sdpFromJson(json);
+}
+
+/** The effective view of a JSON model (strict or lenient) */
+function resolveImpl(model: string): string {
+  resetError();
+  const sdp = modelFrom(model);
+  if (sdp === null) {
+    return errorJson(takeError());
+  }
+  return '{"resolved":' + resolveJson(sdp) + '}';
+}
+
+/** RFC 3264 offer/answer of two JSON models (strict or lenient) */
+function negotiateImpl(offer: string, answer: string): string {
+  resetError();
+  const o = modelFrom(offer);
+  if (o === null) {
+    return errorJson('offer: ' + takeError());
+  }
+  const a = modelFrom(answer);
+  if (a === null) {
+    return errorJson('answer: ' + takeError());
+  }
+  return '{"negotiation":' + negotiateJson(o, a) + '}';
+}
+
 /** Parses SDP text into the JSON model */
 export function parse(sdp: string): string {
   return done(parseImpl(sdp));
@@ -167,6 +201,16 @@ export function validate(sdp: string, type: string | null = null): string {
 /** Validates a JSON model. `type`: null | 'offer' | 'answer' */
 export function validateModel(model: string, type: string | null = null): string {
   return done(validateModelImpl(model, type));
+}
+
+/** The effective view of a JSON model */
+export function resolve(model: string): string {
+  return done(resolveImpl(model));
+}
+
+/** RFC 3264 offer/answer of two JSON models */
+export function negotiate(offer: string, answer: string): string {
+  return done(negotiateImpl(offer, answer));
 }
 
 // ---------------------------------------------------------------------------
@@ -233,6 +277,13 @@ export function sdp_validate_model(ptr: usize, len: i32, type: i32): usize {
   return output(validateModelImpl(input(ptr, len), typeName(type)));
 }
 
+export function sdp_resolve(ptr: usize, len: i32): usize {
+  return output(resolveImpl(input(ptr, len)));
+}
+
+export function sdp_negotiate(offerPtr: usize, offerLen: i32, answerPtr: usize, answerLen: i32): usize {
+  return output(negotiateImpl(input(offerPtr, offerLen), input(answerPtr, answerLen)));
+}
 
 /** The library version as a UTF-8 buffer; release it with sdp_free */
 export function sdp_version(): usize {

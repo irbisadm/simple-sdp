@@ -78,7 +78,7 @@ data class SdpLenientResult(
 )
 
 /**
- * simple-sdp: parse, write and validate SDP (RFC 8866).
+ * simple-sdp: parse, write, validate, resolve and negotiate SDP (RFC 8866, RFC 3264).
  *
  * Runs the WebAssembly build of the library (the AssemblyScript port of the TypeScript
  * package) with Chicory. The module is compiled to JVM bytecode when this library is built,
@@ -111,29 +111,31 @@ class SimpleSdp private constructor(
         val write: ExportFunction = instance.export("sdp_write")
         val validate: ExportFunction = instance.export("sdp_validate")
         val validateModel: ExportFunction = instance.export("sdp_validate_model")
+        val resolve: ExportFunction = instance.export("sdp_resolve")
+        val negotiate: ExportFunction = instance.export("sdp_negotiate")
         val version: ExportFunction = instance.export("sdp_version")
     }
 
     private var runtime: Runtime? = null
 
     /** Calls `fn(ptr, len, *extra)` with UTF-8 input and returns the UTF-8 result */
+    private fun call(select: (Runtime) -> ExportFunction, input: String?, vararg extra: Long): String =
+        call(select, listOfNotNull(input), *extra)
+
+    /** Calls `fn(ptr1, len1, ptr2, len2, …, *extra)` with UTF-8 inputs and returns the UTF-8 result */
     @Synchronized
-    private fun call(select: (Runtime) -> ExportFunction, input: String?, vararg extra: Long): String {
+    private fun call(select: (Runtime) -> ExportFunction, inputs: List<String>, vararg extra: Long): String {
         val rt = runtime ?: Runtime(module, machineFactory).also { runtime = it }
         try {
             val memory = rt.instance.memory()
-            val args = if (input == null) {
-                longArrayOf()
-            } else {
+            val buffers = inputs.map { input ->
                 val bytes = input.toByteArray(Charsets.UTF_8)
                 val ptr = rt.alloc.apply(bytes.size.toLong())[0]
                 memory.write(ptr.toInt(), bytes)
-                longArrayOf(ptr, bytes.size.toLong(), *extra)
+                longArrayOf(ptr, bytes.size.toLong())
             }
-            val res = select(rt).apply(*args)[0]
-            if (input != null) {
-                rt.free.apply(args[0])
-            }
+            val res = select(rt).apply(*buffers.flatMap { it.asList() }.toLongArray(), *extra)[0]
+            buffers.forEach { rt.free.apply(it[0]) }
             val size = rt.len.apply(res)[0].toInt()
             val out = memory.readBytes(res.toInt(), size)
             rt.free.apply(res)
@@ -228,6 +230,31 @@ class SimpleSdp private constructor(
     /** [validate] for a model given as a JSON string */
     fun validateModel(modelJson: String, type: SdpType? = null): List<SdpIssue> =
         issues(call({ it.validateModel }, modelJson, type?.code ?: 0))
+
+    /**
+     * The effective view of a model (strict or lenient): what applies to each media section,
+     * with session-level values inherited and static payload types named. The JSON form of the
+     * TypeScript `SdpResolved`.
+     *
+     * @throws SdpModelException if the model is not valid JSON or a field has the wrong type
+     */
+    fun resolve(model: JsonObject): JsonObject = resolve(model.toString())
+
+    /** [resolve] for a model given as a JSON string */
+    fun resolve(modelJson: String): JsonObject =
+        envelope(call({ it.resolve }, modelJson))["resolved"]!!.jsonObject
+
+    /**
+     * RFC 3264 offer/answer: what the two sides agreed on, per media section of the answer.
+     * The JSON form of the TypeScript `SdpNegotiation`.
+     *
+     * @throws SdpModelException if a model is not valid JSON or a field has the wrong type
+     */
+    fun negotiate(offer: JsonObject, answer: JsonObject): JsonObject = negotiate(offer.toString(), answer.toString())
+
+    /** [negotiate] for models given as JSON strings */
+    fun negotiate(offerJson: String, answerJson: String): JsonObject =
+        envelope(call({ it.negotiate }, listOf(offerJson, answerJson)))["negotiation"]!!.jsonObject
 
     private fun issues(json: String): List<SdpIssue> =
         envelope(json)["issues"]!!.jsonArray.map { Json.decodeFromJsonElement<SdpIssue>(it) }

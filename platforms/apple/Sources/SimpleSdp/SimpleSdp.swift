@@ -79,7 +79,7 @@ public enum SimpleSdpRuntimeError: Error {
     case unexpectedResult(String)
 }
 
-/// simple-sdp: parse, write and validate SDP (RFC 8866).
+/// simple-sdp: parse, write, validate, resolve and negotiate SDP (RFC 8866, RFC 3264).
 ///
 /// Runs the WebAssembly build of the library (the AssemblyScript port of the TypeScript
 /// package) on the WasmKit interpreter. The model is the JSON form of the TypeScript `Sdp`
@@ -93,7 +93,8 @@ public final class SimpleSdp: @unchecked Sendable {
         let store: Store
         let instance: Instance
         let memory: Memory
-        let alloc, free, len, parse, parseLenient, write, validate, validateLenient, validateModel, version: Function
+        let alloc, free, len, parse, parseLenient, write, validate, validateLenient, validateModel, resolve, negotiate,
+            version: Function
 
         init(module: Module) throws {
             engine = Engine()
@@ -119,6 +120,8 @@ public final class SimpleSdp: @unchecked Sendable {
             write = try function("sdp_write")
             validate = try function("sdp_validate")
             validateModel = try function("sdp_validate_model")
+            resolve = try function("sdp_resolve")
+            negotiate = try function("sdp_negotiate")
             version = try function("sdp_version")
         }
     }
@@ -142,6 +145,11 @@ public final class SimpleSdp: @unchecked Sendable {
 
     /// Calls `select(runtime)(ptr, len, extra...)` with UTF-8 input and returns the UTF-8 result.
     private func call(_ select: (Runtime) -> Function, _ input: String?, _ extra: [UInt32] = []) throws -> String {
+        try call(select, inputs: input.map { [$0] } ?? [], extra)
+    }
+
+    /// Calls `select(runtime)(ptr1, len1, ptr2, len2, ..., extra...)` with UTF-8 inputs and returns the UTF-8 result.
+    private func call(_ select: (Runtime) -> Function, inputs: [String], _ extra: [UInt32] = []) throws -> String {
         lock.lock()
         defer { lock.unlock() }
         let rt: Runtime
@@ -153,16 +161,19 @@ public final class SimpleSdp: @unchecked Sendable {
         }
         do {
             var args: [Value] = []
-            if let input {
+            var buffers: [Value] = []
+            for input in inputs {
                 let bytes = Array(input.utf8)
                 let ptr = try rt.alloc([.i32(UInt32(bytes.count))])[0].i32
                 rt.memory.withUnsafeMutableBufferPointer(offset: UInt(ptr), count: bytes.count) { buffer in
                     buffer.copyBytes(from: bytes)
                 }
-                args = [.i32(ptr), .i32(UInt32(bytes.count))] + extra.map { .i32($0) }
+                buffers.append(.i32(ptr))
+                args += [.i32(ptr), .i32(UInt32(bytes.count))]
             }
+            args += extra.map { .i32($0) }
             let result = try select(rt)(args)[0].i32
-            if let ptr = args.first {
+            for ptr in buffers {
                 _ = try rt.free([ptr])
             }
             let count = try Int(rt.len([.i32(result)])[0].i32)
@@ -307,6 +318,43 @@ public final class SimpleSdp: @unchecked Sendable {
     /// `validate(model:)` for a model given as JSON.
     public func validate(json: Data, type: SdpType? = nil) throws -> [SdpIssue] {
         try issues(try call({ $0.validateModel }, String(decoding: json, as: UTF8.self), [type?.rawValue ?? 0]))
+    }
+
+    /// The effective view of a model (strict or lenient): what applies to each media section,
+    /// with session-level values inherited and static payload types named. The JSON form of
+    /// the TypeScript `SdpResolved`, as a dictionary.
+    ///
+    /// - Throws: `SdpModelError` if a field has the wrong type
+    public func resolve(_ model: [String: Any]) throws -> [String: Any] {
+        try resolve(json: try JSONSerialization.data(withJSONObject: model))
+    }
+
+    /// `resolve` for a model given as JSON.
+    public func resolve(json: Data) throws -> [String: Any] {
+        let result = try envelope(try call({ $0.resolve }, String(decoding: json, as: UTF8.self)))
+        guard let resolved = result["resolved"] as? [String: Any] else {
+            throw SimpleSdpRuntimeError.unexpectedResult("resolve")
+        }
+        return resolved
+    }
+
+    /// RFC 3264 offer/answer: what the two sides agreed on, per media section of the answer.
+    /// The JSON form of the TypeScript `SdpNegotiation`, as a dictionary.
+    ///
+    /// - Throws: `SdpModelError` if a field of either model has the wrong type
+    public func negotiate(offer: [String: Any], answer: [String: Any]) throws -> [String: Any] {
+        try negotiate(offerJSON: try JSONSerialization.data(withJSONObject: offer),
+                      answerJSON: try JSONSerialization.data(withJSONObject: answer))
+    }
+
+    /// `negotiate` for models given as JSON.
+    public func negotiate(offerJSON: Data, answerJSON: Data) throws -> [String: Any] {
+        let inputs = [String(decoding: offerJSON, as: UTF8.self), String(decoding: answerJSON, as: UTF8.self)]
+        let result = try envelope(try call({ $0.negotiate }, inputs: inputs))
+        guard let negotiation = result["negotiation"] as? [String: Any] else {
+            throw SimpleSdpRuntimeError.unexpectedResult("negotiate")
+        }
+        return negotiation
     }
 
     private func issues(_ json: String) throws -> [SdpIssue] {

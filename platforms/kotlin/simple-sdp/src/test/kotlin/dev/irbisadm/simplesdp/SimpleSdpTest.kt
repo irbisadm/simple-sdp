@@ -196,6 +196,28 @@ class SimpleSdpTest {
     }
 
     @Test
+    fun `resolve and negotiate`() {
+        val head = arrayOf("v=0", "o=- 1 1 IN IP4 h", "s=-", "t=0 0")
+        val offer = sdp.parseLenient(lines(*head, "a=group:BUNDLE a", "m=audio 4000 RTP/AVP 0 96", "a=mid:a",
+            "a=rtpmap:96 telephone-event/8000")).sdp
+        val answer = sdp.parseLenient(lines(*head, "m=audio 5000 RTP/AVP 96 8", "a=mid:a", "a=sendonly",
+            "a=rtpmap:96 telephone-event/8000")).sdp
+
+        val pcmu = sdp.resolve(offer)["media"]!!.jsonArray[0].jsonObject["codecs"]!!.jsonArray[0].jsonObject
+        assertEquals("PCMU", pcmu["encodingName"]!!.jsonPrimitive.content)
+        assertEquals(JsonPrimitive(true), pcmu["static"])
+
+        val negotiation = sdp.negotiate(offer, answer)
+        assertEquals(0, negotiation["bundle"]!!.jsonArray.size)
+        val media = negotiation["media"]!!.jsonArray[0].jsonObject
+        assertEquals(listOf("telephone-event"), media["codecs"]!!.jsonArray.map { it.jsonObject["encodingName"]!!.jsonPrimitive.content })
+        assertEquals("sendonly", media["answerDirection"]!!.jsonPrimitive.content)
+        assertEquals(JsonPrimitive(true), media["hold"])
+
+        assertFailsWith<SdpModelException> { sdp.negotiate("{}", "[]") }
+    }
+
+    @Test
     fun version() {
         assertEquals(System.getProperty("version"), sdp.version)
         assertEquals(JsonPrimitive(0), sdp.parse(lines("v=0", "o=- 1 1 IN IP4 h", "s=-", "t=0 0"))["protocolVersion"])

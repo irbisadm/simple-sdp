@@ -8,7 +8,8 @@
 # simple-sdp
 
 Parse, modify, write and validate Session Description Protocol
-([RFC 8866](https://www.rfc-editor.org/rfc/rfc8866)) messages for WebRTC and SIP.
+([RFC 8866](https://www.rfc-editor.org/rfc/rfc8866)) messages for WebRTC and SIP, and
+compute what an offer and an answer agreed on ([RFC 3264](https://www.rfc-editor.org/rfc/rfc3264)).
 TypeScript, no runtime dependencies, works in Node.js and browsers.
 
 - **`sdpReader.parse`**: strict. Line order and mandatory lines are checked against
@@ -20,6 +21,8 @@ TypeScript, no runtime dependencies, works in Node.js and browsers.
   normalized (see [Writing](#writing)).
 - **`sdpValidator.validate`**: reports RFC and WebRTC rule violations as a list of issues.
 - **Typed WebRTC attributes**: ICE, DTLS, BUNDLE, codecs, simulcast, SSRCs (see below).
+- **`sdpResolver.resolve`** and **`sdpNegotiator.negotiate`**: what applies to each media
+  section, and the RFC 3264 offer/answer result (see [Resolve and negotiate](#resolve-and-negotiate)).
 
 ```sh
 npm install @irbisadm/simple-sdp
@@ -251,6 +254,61 @@ by design.
 issue with severity `warning` and code `lenient:<code>` (e.g. `lenient:out-of-order`, with
 `lineNumber`), then runs the other checks on the model.
 
+## Resolve and negotiate
+
+The model says what is written. `sdpResolver.resolve(sdp)` says what applies to each media
+section; `sdpNegotiator.negotiate(offer, answer)` says what the two sides agreed on. Both take
+the model of `parse` or of `parseLenient` and do not modify it.
+
+```ts
+import {sdpReader, sdpResolver, sdpNegotiator} from '@irbisadm/simple-sdp';
+
+// test/fixtures: a Polycom phone offers PCMU, PCMA, G729 and telephone-event/127 with
+// a=sendrecv at session level; FreeSWITCH answers PCMU and telephone-event/101
+const offer = sdpReader.parseLenient(polycomOffer).sdp;
+const answer = sdpReader.parseLenient(freeswitchAnswer).sdp;
+
+const [audio] = sdpResolver.resolve(offer).media;
+audio.direction;              // 'sendrecv', from the session level
+audio.codecs[2];              // {payloadType: 18, encodingName: 'G729', clockRate: 8000, parameters: {annexb: 'no'}}
+
+const [agreed] = sdpNegotiator.negotiate(offer, answer).media;
+agreed.codecs.map(c => `${c.payloadType} ${c.encodingName}`); // ['0 PCMU', '101 telephone-event']
+agreed.hold;                  // false
+```
+
+Codecs match by name, not by payload type: the answer's telephone-event/101 agrees with the
+offer's telephone-event/127.
+
+`SdpResolved` has `bundle` (mids of the first `a=group:BUNDLE`), `hold` (a section that is not
+rejected has a direction other than `sendrecv`) and one `SdpResolvedMediaSection` per `m=` line:
+
+| Field | Value |
+|---|---|
+| `index`, `mid?`, `type`, `port?`, `proto?` | from the `m=` line and `a=mid` |
+| `rejected` | port 0 (RFC 3264 §6) |
+| `direction` | media level, else session level, else `sendrecv` |
+| `codecs` | in `m=` order. A payload type without `a=rtpmap` gets its RFC 3551 name, clock rate and channels and `static: true`; an unassigned one keeps only `payloadType`. `a=rtcp-fb:*` values are added to every codec's `rtcpFeedback` |
+| `extmap` | media-level lines, then session-level lines with an id the media level does not use (RFC 8285 §5). An RFC 6904 encrypted extension gives the inner `uri` and `attributes` and `encrypted: true` |
+| `iceUfrag?`, `icePwd?`, `setup?`, `fingerprints` | media level, else session level |
+
+Where lenient parsing kept a line as a generic attribute, the resolver still reads it when the
+meaning is clear: `a=rtpmap:101 telephone-event` without a clock rate names the codec, and
+`a=setup:client` gives `setup: 'client'`.
+
+`SdpNegotiation` has one `SdpNegotiatedMediaSection` per media section of the answer:
+
+| Field | Value |
+|---|---|
+| `index`, `mid?`, `type` | of the answer section |
+| `offerIndex?` | the offer section with the same `a=mid`, else at the same index; absent if there is none |
+| `rejected` | the answer has port 0 |
+| `codecs` | answer codecs the offer also lists: same name (ASCII case-insensitive), clock rate and channels (1 when absent); an unnamed payload type matches by number. Empty when rejected |
+| `extmap` | answer extensions the offer also lists, by URI and encryption. Empty when rejected |
+| `offerDirection`, `answerDirection`, `hold` | `hold`: not rejected, and either direction is not `sendrecv` |
+
+ICE and DTLS values of each side are in the resolved sections: `resolve(offer).media[offerIndex]`.
+
 ## Checked against public SDP sets
 
 The automated tests use the fixtures in this repository. `yarn check:external`
@@ -311,15 +369,15 @@ Safari is not covered by fixtures yet.
 ## WebAssembly, iOS and Android
 
 [`assembly/`](assembly) is a port of the library to [AssemblyScript](https://www.assemblyscript.org/).
-It compiles to a WebAssembly module (≈90 KB, ≈32 KB gzipped) with no imports, so the same
-parser, writer and validator run in any wasm runtime: browsers and Node.js, iOS through a
+It compiles to a WebAssembly module (≈105 KB, ≈37 KB gzipped) with no imports, so the same
+parser, writer, validator, resolver and negotiator run in any wasm runtime: browsers and Node.js, iOS through a
 wasm interpreter (no JIT, as the App Store requires), Android and the JVM as bytecode
 compiled from the module at build time.
 
 The port behaves exactly like the TypeScript code. `yarn test:wasm` runs the test suites of
 this package against the wasm build, plus a differential test that compares both
 implementations on all fixtures and on thousands of mutations of them: same model, same
-written text, same issues, same error messages.
+written text, same issues, same error messages, same resolved and negotiated results.
 
 | Platform | Get it | Runtime |
 |---|---|---|
@@ -342,6 +400,8 @@ let issues = try sdp.validate(json: json, type: .offer)
 let text = try sdp.write(json: json)
 let model = try sdp.parse(offer)                     // [String: Any] (does not keep key order)
 let (lenient, warnings) = try sdp.parseLenient(capture) // never throws SdpParseError
+let resolved = try sdp.resolve(lenient)              // [String: Any], the shape of SdpResolved
+let negotiation = try sdp.negotiate(offer: offerModel, answer: answerModel)
 ```
 
 ```kotlin
@@ -350,6 +410,8 @@ val model = sdp.parse(offer)                         // kotlinx.serialization Js
 val issues = sdp.validate(model, SdpType.OFFER)
 val text = sdp.write(model)
 val (lenient, warnings) = sdp.parseLenient(capture)  // never throws SdpParseException
+val resolved = sdp.resolve(lenient)                  // JsonObject, the shape of SdpResolved
+val negotiation = sdp.negotiate(offerModel, answerModel)
 ```
 
 ### Module interface
@@ -366,6 +428,8 @@ bindings:
 | `sdp_validate_model(ptr, len, type) → res` | model JSON in; `{"issues": [...]}` or `{"error": {message}}` |
 | `sdp_parse_lenient(ptr, len) → res` | `{"sdp": model, "warnings": [{code, reason, lineNumber, line, action}]}`; never an error |
 | `sdp_validate_lenient(ptr, len, type) → res` | like `sdp_validate`, with the text parsed leniently |
+| `sdp_resolve(ptr, len) → res` | model JSON in (strict or lenient); `{"resolved": SdpResolved}` or `{"error": {message}}` |
+| `sdp_negotiate(offerPtr, offerLen, answerPtr, answerLen) → res` | two model JSONs in; `{"negotiation": SdpNegotiation}` or `{"error": {message}}` |
 | `sdp_version() → res` | version string |
 | `sdp_len(res) → len` | byte length of a buffer |
 | `sdp_free(ptr)` | release an input buffer or a result |
@@ -380,7 +444,8 @@ module 6 / 9 ms, WasmKit (release build) ≈10 ms each.
 
 The generated ESM bindings (`wasm/build/simple-sdp.js`, published as
 `wasm/dist/simple-sdp.mjs`) take strings: `parse(text)`, `parseLenient(text)`, `write(json)`,
-`validate(text, type)`, `validateLenient(text, type)`, `validateModel(json, type)`.
+`validate(text, type)`, `validateLenient(text, type)`, `validateModel(json, type)`,
+`resolve(json)`, `negotiate(offerJson, answerJson)`.
 
 Build: `yarn asbuild` compiles the module and copies it into `platforms/` (the copies are
 committed so that SwiftPM and Gradle builds do not need Node.js).
